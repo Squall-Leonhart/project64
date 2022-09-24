@@ -1,12 +1,13 @@
 #include "stdafx.h"
-#include "RomInformation.h"
+
 #include "Debugger/Breakpoints.h"
 #include "Debugger/ScriptSystem.h"
 #include "DiscordRPC.h"
+#include "RomInformation.h"
 #include <Project64-core/N64System/N64Disk.h>
 #include <Project64\UserInterface\About.h>
-#include <windows.h>
 #include <commdlg.h>
+#include <windows.h>
 
 CMainMenu::CMainMenu(CMainGui * hMainWindow) :
     CBaseMenu(),
@@ -24,13 +25,14 @@ CMainMenu::CMainMenu(CMainGui * hMainWindow) :
     m_ChangeSettingList.push_back(UserInterface_ShowCPUPer);
     m_ChangeSettingList.push_back(Logging_GenerateLog);
     m_ChangeSettingList.push_back(Debugger_RecordExecutionTimes);
-    m_ChangeSettingList.push_back(Debugger_ShowTLBMisses);
-    m_ChangeSettingList.push_back(Debugger_ShowUnhandledMemory);
+    m_ChangeSettingList.push_back(Debugger_EndOnPermLoop);
+    m_ChangeSettingList.push_back(Debugger_BreakOnUnhandledMemory);
+    m_ChangeSettingList.push_back(Debugger_BreakOnAddressError);
+    m_ChangeSettingList.push_back(Debugger_StepOnBreakOpCode);
     m_ChangeSettingList.push_back(Debugger_ShowPifErrors);
     m_ChangeSettingList.push_back(Debugger_ShowDListAListCount);
     m_ChangeSettingList.push_back(Debugger_DebugLanguage);
     m_ChangeSettingList.push_back(Debugger_ShowRecompMemSize);
-    m_ChangeSettingList.push_back(Debugger_ShowDivByZero);
     m_ChangeSettingList.push_back(Debugger_RecordRecompilerAsm);
     m_ChangeSettingList.push_back(Debugger_DisableGameFixes);
     m_ChangeSettingList.push_back(Debugger_TraceMD5);
@@ -149,7 +151,7 @@ void CMainMenu::OnOpenRom(HWND hWnd)
     {
         return;
     }
-    
+
     stdstr ext = CPath(File).GetExtension();
     if ((_stricmp(ext.c_str(), "ndd") != 0) && (_stricmp(ext.c_str(), "d64") != 0))
     {
@@ -202,10 +204,10 @@ void CMainMenu::OnEndEmulation(void)
     }
     m_Gui->SaveWindowLoc();
 
-	if (UISettingsLoadBool(Setting_EnableDiscordRPC))
-	{
-		CDiscord::Update(false);
-	}
+    if (UISettingsLoadBool(Setting_EnableDiscordRPC))
+    {
+        CDiscord::Update(false);
+    }
 }
 
 void CMainMenu::OnScreenShot(void)
@@ -332,7 +334,7 @@ bool CMainMenu::ProcessMessage(HWND hWnd, DWORD /*FromAccelerator*/, DWORD MenuI
         WriteTrace(TraceUserInterface, TraceDebug, "ID_FILE_ROMDIRECTORY 3");
         break;
     case ID_FILE_REFRESHROMLIST: m_Gui->RefreshRomList(); break;
-    case ID_FILE_EXIT:           DestroyWindow((HWND)hWnd); break;
+    case ID_FILE_EXIT: DestroyWindow((HWND)hWnd); break;
     case ID_SYSTEM_RESET_SOFT:
         WriteTrace(TraceUserInterface, TraceDebug, "ID_SYSTEM_RESET_SOFT");
         g_BaseSystem->ExternalEvent(SysEvent_ResetCPU_Soft);
@@ -347,7 +349,9 @@ bool CMainMenu::ProcessMessage(HWND hWnd, DWORD /*FromAccelerator*/, DWORD MenuI
         g_BaseSystem->ExternalEvent(g_Settings->LoadBool(GameRunning_CPU_Paused) ? SysEvent_ResumeCPU_FromMenu : SysEvent_PauseCPU_FromMenu);
         WriteTrace(TraceUserInterface, TraceDebug, "ID_SYSTEM_PAUSE 1");
         break;
-    case ID_SYSTEM_BITMAP: OnScreenShot(); break;
+    case ID_SYSTEM_BITMAP:
+        OnScreenShot();
+        break;
         break;
     case ID_SYSTEM_LIMITFPS:
         WriteTrace(TraceUserInterface, TraceDebug, "ID_SYSTEM_LIMITFPS");
@@ -418,7 +422,7 @@ bool CMainMenu::ProcessMessage(HWND hWnd, DWORD /*FromAccelerator*/, DWORD MenuI
             ShowCursor(true);
             m_Gui->ShowStatusBar(g_Settings->LoadBool((SettingID)UserInterface_ShowStatusBar));
             m_Gui->MakeWindowOnTop(UISettingsLoadBool(UserInterface_AlwaysOnTop));
-            UISettingsSaveBool(UserInterface_InFullScreen, (DWORD)false);
+            UISettingsSaveBool(UserInterface_InFullScreen, (DWORD) false);
         }
         else
         {
@@ -490,18 +494,24 @@ bool CMainMenu::ProcessMessage(HWND hWnd, DWORD /*FromAccelerator*/, DWORD MenuI
             g_Settings->SaveBool(UserInterface_ShowCPUPer, true);
         }
         break;
-    case ID_OPTIONS_SETTINGS: OnSettings(hWnd);  break;
+    case ID_OPTIONS_SETTINGS: OnSettings(hWnd); break;
     case ID_PROFILE_PROFILE:
         g_Settings->SaveBool(Debugger_RecordExecutionTimes, !g_Settings->LoadBool(Debugger_RecordExecutionTimes));
         g_BaseSystem->ExternalEvent(SysEvent_ResetFunctionTimes);
         break;
     case ID_PROFILE_RESETCOUNTER: g_BaseSystem->ExternalEvent(SysEvent_ResetFunctionTimes); break;
     case ID_PROFILE_GENERATELOG: g_BaseSystem->ExternalEvent(SysEvent_DumpFunctionTimes); break;
-    case ID_DEBUG_SHOW_TLB_MISSES:
-        g_Settings->SaveBool(Debugger_ShowTLBMisses, !g_Settings->LoadBool(Debugger_ShowTLBMisses));
+    case ID_DEBUG_END_ON_PERM_LOOP:
+        g_Settings->SaveBool(Debugger_EndOnPermLoop, !g_Settings->LoadBool(Debugger_EndOnPermLoop));
         break;
-    case ID_DEBUG_SHOW_UNHANDLED_MEM:
-        g_Settings->SaveBool(Debugger_ShowUnhandledMemory, !g_Settings->LoadBool(Debugger_ShowUnhandledMemory));
+    case ID_DEBUG_BREAK_ON_UNHANDLED_MEM:
+        g_Settings->SaveBool(Debugger_BreakOnUnhandledMemory, !g_Settings->LoadBool(Debugger_BreakOnUnhandledMemory));
+        break;
+    case ID_DEBUG_BREAK_ON_ADDRESS_ERROR:
+        g_Settings->SaveBool(Debugger_BreakOnAddressError, !g_Settings->LoadBool(Debugger_BreakOnAddressError));
+        break;
+    case ID_DEBUG_STEP_ON_BREAK_OPCODE:
+        g_Settings->SaveBool(Debugger_StepOnBreakOpCode, !g_Settings->LoadBool(Debugger_StepOnBreakOpCode));
         break;
     case ID_DEBUG_SHOW_PIF_ERRORS:
         g_Settings->SaveBool(Debugger_ShowPifErrors, !g_Settings->LoadBool(Debugger_ShowPifErrors));
@@ -518,9 +528,6 @@ bool CMainMenu::ProcessMessage(HWND hWnd, DWORD /*FromAccelerator*/, DWORD MenuI
     case ID_DEBUG_SHOW_RECOMP_MEM_SIZE:
         g_Settings->SaveBool(Debugger_ShowRecompMemSize, !g_Settings->LoadBool(Debugger_ShowRecompMemSize));
         g_Notify->DisplayMessage(0, EMPTY_STRING);
-        break;
-    case ID_DEBUG_SHOW_DIV_BY_ZERO:
-        g_Settings->SaveBool(Debugger_ShowDivByZero, !g_Settings->LoadBool(Debugger_ShowDivByZero));
         break;
     case ID_DEBUG_RECORD_RECOMPILER_ASM:
         g_Settings->SaveBool(Debugger_RecordRecompilerAsm, !g_Settings->LoadBool(Debugger_RecordRecompilerAsm));
@@ -645,7 +652,7 @@ bool CMainMenu::ProcessMessage(HWND hWnd, DWORD /*FromAccelerator*/, DWORD MenuI
 stdstr CMainMenu::GetFileLastMod(const CPath & FileName)
 {
     HANDLE hFile = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, nullptr,
-        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS, nullptr);
+                               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS, nullptr);
     if (hFile == INVALID_HANDLE_VALUE)
     {
         return "";
@@ -815,16 +822,13 @@ void CMainMenu::FillOutMenu(HMENU hMenu)
     FileMenu.push_back(Item);
     Item.Reset(ID_FILE_OPEN_COMBO, MENU_OPEN_COMBO, m_ShortCuts.ShortCutString(ID_FILE_OPEN_COMBO, RunningState));
     FileMenu.push_back(Item);
-    if (!inBasicMode)
-    {
-        Item.Reset(ID_FILE_ROM_INFO, MENU_ROM_INFO, m_ShortCuts.ShortCutString(ID_FILE_ROM_INFO, RunningState));
-        Item.SetItemEnabled(RomLoaded);
-        FileMenu.push_back(Item);
-        FileMenu.push_back(MENU_ITEM(SPLITER));
-        Item.Reset(ID_FILE_STARTEMULATION, MENU_START, m_ShortCuts.ShortCutString(ID_FILE_STARTEMULATION, RunningState));
-        Item.SetItemEnabled(RomLoaded && !CPURunning);
-        FileMenu.push_back(Item);
-    }
+    Item.Reset(ID_FILE_ROM_INFO, MENU_ROM_INFO, m_ShortCuts.ShortCutString(ID_FILE_ROM_INFO, RunningState));
+    Item.SetItemEnabled(RomLoaded);
+    FileMenu.push_back(Item);
+    FileMenu.push_back(MENU_ITEM(SPLITER));
+    Item.Reset(ID_FILE_STARTEMULATION, MENU_START, m_ShortCuts.ShortCutString(ID_FILE_STARTEMULATION, RunningState));
+    Item.SetItemEnabled(RomLoaded && !CPURunning);
+    FileMenu.push_back(Item);
     Item.Reset(ID_FILE_ENDEMULATION, MENU_END, m_ShortCuts.ShortCutString(ID_FILE_ENDEMULATION, RunningState));
     Item.SetItemEnabled(CPURunning);
     FileMenu.push_back(Item);
@@ -1087,6 +1091,31 @@ void CMainMenu::FillOutMenu(HMENU hMenu)
         Item.Reset(SUB_MENU, EMPTY_STRING, EMPTY_STDSTR, &DebugInterrupt, L"&Generate interrupt");
         DebugR4300Menu.push_back(Item);
 
+        Item.Reset(ID_DEBUG_END_ON_PERM_LOOP, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"End on perm loop");
+        if (g_Settings->LoadBool(Debugger_EndOnPermLoop))
+        {
+            Item.SetItemTicked(true);
+        }
+        DebugR4300Menu.push_back(Item);
+        Item.Reset(ID_DEBUG_BREAK_ON_UNHANDLED_MEM, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"Break on unhandled memory actions");
+        if (g_Settings->LoadBool(Debugger_BreakOnUnhandledMemory))
+        {
+            Item.SetItemTicked(true);
+        }
+        DebugR4300Menu.push_back(Item);
+        Item.Reset(ID_DEBUG_BREAK_ON_ADDRESS_ERROR, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"Break on address error");
+        if (g_Settings->LoadBool(Debugger_BreakOnAddressError))
+        {
+            Item.SetItemTicked(true);
+        }
+        DebugR4300Menu.push_back(Item);
+        Item.Reset(ID_DEBUG_STEP_ON_BREAK_OPCODE, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"Step on break OpCode");
+        if (g_Settings->LoadBool(Debugger_StepOnBreakOpCode))
+        {
+            Item.SetItemTicked(true);
+        }
+        DebugR4300Menu.push_back(Item);
+
         // Debug - memory
         Item.Reset(ID_DEBUGGER_MEMORY, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"View...");
         DebugMemoryMenu.push_back(Item);
@@ -1221,20 +1250,8 @@ void CMainMenu::FillOutMenu(HMENU hMenu)
         }
 
         // Notification menu
-        Item.Reset(ID_DEBUG_SHOW_UNHANDLED_MEM, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"On unhandled memory actions");
-        if (g_Settings->LoadBool(Debugger_ShowUnhandledMemory))
-        {
-            Item.SetItemTicked(true);
-        }
-        DebugNotificationMenu.push_back(Item);
         Item.Reset(ID_DEBUG_SHOW_PIF_ERRORS, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"On PIF errors");
         if (g_Settings->LoadBool(Debugger_ShowPifErrors))
-        {
-            Item.SetItemTicked(true);
-        }
-        DebugNotificationMenu.push_back(Item);
-        Item.Reset(ID_DEBUG_SHOW_DIV_BY_ZERO, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"On division by zero errors");
-        if (g_Settings->LoadBool(Debugger_ShowDivByZero))
         {
             Item.SetItemTicked(true);
         }
@@ -1250,12 +1267,6 @@ void CMainMenu::FillOutMenu(HMENU hMenu)
         Item.Reset(SUB_MENU, EMPTY_STRING, EMPTY_STDSTR, &DebugNotificationMenu, L"Notification");
         DebugMenu.push_back(Item);
         DebugMenu.push_back(MENU_ITEM(SPLITER));
-        Item.Reset(ID_DEBUG_SHOW_TLB_MISSES, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"Show TLB misses");
-        if (g_Settings->LoadBool(Debugger_ShowTLBMisses))
-        {
-            Item.SetItemTicked(true);
-        }
-        DebugMenu.push_back(Item);
         Item.Reset(ID_DEBUG_SHOW_DLIST_COUNT, EMPTY_STRING, EMPTY_STDSTR, nullptr, L"Display Alist/Dlist count");
         if (g_Settings->LoadBool(Debugger_ShowDListAListCount))
         {

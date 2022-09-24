@@ -16,32 +16,65 @@
 #include <Project64-core\Settings\GameSettings.h>
 #include <Project64-core\Logging.h>
 
+#pragma warning(push)
+#pragma warning(disable : 4201) // Non-standard extension used: nameless struct/union
+
+union COP0Context
+{
+    uint64_t Value;
+
+    struct
+    {
+        unsigned : 4;
+        unsigned BadVPN2 : 19;
+        unsigned PTEBaseHi : 9;
+        unsigned PTEBaseLo : 32;
+    };
+};
+
+union COP0XContext
+{
+    uint64_t Value;
+
+    struct
+    {
+        unsigned : 4;
+        unsigned BadVPN2 : 27;
+        unsigned R : 2;
+        unsigned PTEBase : 31;
+    };
+};
+
+#pragma warning(pop)
+
 // CPO registers by name
 class CP0registers
 {
 protected:
-    CP0registers (uint32_t * _CP0);
+    CP0registers (uint64_t * _CP0);
 
 public:
-    uint32_t & INDEX_REGISTER;
-    uint32_t & RANDOM_REGISTER;
-    uint32_t & ENTRYLO0_REGISTER;
-    uint32_t & ENTRYLO1_REGISTER;
-    uint32_t & CONTEXT_REGISTER;
-    uint32_t & PAGE_MASK_REGISTER;
-    uint32_t & WIRED_REGISTER;
-    uint32_t & BAD_VADDR_REGISTER;
-    uint32_t & COUNT_REGISTER;
-    uint32_t & ENTRYHI_REGISTER;
-    uint32_t & COMPARE_REGISTER;
-    uint32_t & STATUS_REGISTER;
-    uint32_t & CAUSE_REGISTER;
-    uint32_t & EPC_REGISTER;
-    uint32_t & CONFIG_REGISTER;
-    uint32_t & TAGLO_REGISTER;
-    uint32_t & TAGHI_REGISTER;
-    uint32_t & ERROREPC_REGISTER;
-    uint32_t & FAKE_CAUSE_REGISTER;
+    uint64_t & INDEX_REGISTER;
+    uint64_t & RANDOM_REGISTER;
+    uint64_t & ENTRYLO0_REGISTER;
+    uint64_t & ENTRYLO1_REGISTER;
+    COP0Context & CONTEXT_REGISTER;
+    uint64_t & PAGE_MASK_REGISTER;
+    uint64_t & WIRED_REGISTER;
+    uint64_t & BAD_VADDR_REGISTER;
+    uint64_t & COUNT_REGISTER;
+    uint64_t & ENTRYHI_REGISTER;
+    uint64_t & COMPARE_REGISTER;
+    uint64_t & STATUS_REGISTER;
+    uint64_t & CAUSE_REGISTER;
+    uint64_t & EPC_REGISTER;
+    uint64_t & PREVID_REGISTER;
+    uint64_t & CONFIG_REGISTER;
+    COP0XContext & XCONTEXT_REGISTER;
+    uint64_t & TAGLO_REGISTER;
+    uint64_t & TAGHI_REGISTER;
+    uint64_t & ERROREPC_REGISTER;
+    uint64_t & FAKE_CAUSE_REGISTER;
 
 private:
     CP0registers();
@@ -229,7 +262,7 @@ protected:
     static uint32_t      * _PROGRAM_COUNTER;
     static MIPS_DWORD    * _GPR;
     static MIPS_DWORD    * _FPR;
-    static uint32_t      * _CP0;
+    static uint64_t      * _CP0;
     static MIPS_DWORD    * _RegHI;
     static MIPS_DWORD    * _RegLO;
     static float        ** _FPR_S;
@@ -263,22 +296,27 @@ public:
     CRegisters(CN64System * System, CSystemEvents * SystemEvents);
 
     void CheckInterrupts();
-    void DoAddressError( bool DelaySlot, uint32_t BadVaddr, bool FromRead );
+    void DoAddressError( bool DelaySlot, uint64_t BadVaddr, bool FromRead );
     void DoBreakException( bool DelaySlot );
     void DoTrapException( bool DelaySlot );
     void DoCopUnusableException( bool DelaySlot, int32_t Coprocessor );
     bool DoIntrException( bool DelaySlot );
-    void DoTLBReadMiss(bool DelaySlot, uint32_t BadVaddr);
-    void DoTLBWriteMiss(bool DelaySlot, uint32_t BadVaddr);
+    void DoIllegalInstructionException(bool DelaySlot);
+    void DoOverflowException(bool DelaySlot);
+    void DoTLBReadMiss(bool DelaySlot, uint64_t BadVaddr);
+    void DoTLBWriteMiss(bool DelaySlot, uint64_t BadVaddr);
     void DoSysCallException ( bool DelaySlot);
     void FixFpuLocations();
     void Reset();
     void SetAsCurrentSystem();
 
+    uint64_t Cop0_MF(uint32_t Reg);
+    void Cop0_MT(uint32_t Reg, uint64_t Value);
+
     // General registers
     uint32_t m_PROGRAM_COUNTER;
     MIPS_DWORD m_GPR[32];
-    uint32_t m_CP0[33];
+    uint64_t m_CP0[33];
     MIPS_DWORD m_HI;
     MIPS_DWORD m_LO;
     uint32_t m_LLBit;

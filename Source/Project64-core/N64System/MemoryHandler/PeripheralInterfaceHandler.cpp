@@ -35,9 +35,11 @@ PeripheralInterfaceHandler::PeripheralInterfaceHandler(CN64System & System, CMip
     m_Domain2Address2Handler(Domain2Address2Handler),
     m_MMU(MMU),
     m_Reg(Reg),
-    m_PC(Reg.m_PROGRAM_COUNTER)
+    m_PC(Reg.m_PROGRAM_COUNTER),
+    m_DMAUsed(false)
 {
     System.RegisterCallBack(CN64SystemCB_Reset, this, (CN64System::CallBackFunction)stSystemReset);
+    System.RegisterCallBack(CN64SystemCB_LoadedGameState, this, (CN64System::CallBackFunction)stLoadedGameState);
 }
 
 bool PeripheralInterfaceHandler::Read32(uint32_t Address, uint32_t & Value)
@@ -166,17 +168,21 @@ bool PeripheralInterfaceHandler::Write32(uint32_t Address, uint32_t Value, uint3
     return true;
 }
 
+void PeripheralInterfaceHandler::LoadedGameState(void)
+{
+    m_DMAUsed = true;
+}
+
 void PeripheralInterfaceHandler::SystemReset(void)
 {
     PI_RD_LEN_REG = 0x0000007F;
     PI_WR_LEN_REG = 0x0000007F;
+    m_DMAUsed = false;
 }
 
 void PeripheralInterfaceHandler::OnFirstDMA()
 {
     int16_t offset;
-    const uint32_t rt = g_MMU->RdramSize();
-
     switch (g_Rom->CicChipID())
     {
     case CIC_NUS_6101:
@@ -199,7 +205,7 @@ void PeripheralInterfaceHandler::OnFirstDMA()
         g_Notify->DisplayError(stdstr_f("Unhandled CicChip(%d) in first DMA", g_Rom->CicChipID()).c_str());
         return;
     }
-    g_MMU->UpdateMemoryValue32(0x80000000 + offset, rt);
+    m_MMU.UpdateMemoryValue32(0x80000000 + offset, m_MMU.RdramSize());
 }
 
 void PeripheralInterfaceHandler::PI_DMA_READ()
@@ -216,7 +222,7 @@ void PeripheralInterfaceHandler::PI_DMA_READ()
         PI_RD_LEN += 1;
     }
 
-    if (PI_DRAM_ADDR_REG + PI_RD_LEN > g_MMU->RdramSize())
+    if (PI_DRAM_ADDR_REG + PI_RD_LEN > m_MMU.RdramSize())
     {
         PI_STATUS_REG &= ~PI_STATUS_DMA_BUSY;
         PI_STATUS_REG |= PI_STATUS_INTERRUPT;
@@ -237,7 +243,7 @@ void PeripheralInterfaceHandler::PI_DMA_READ()
     {
         // 64DD user sector
         uint32_t i;
-        uint8_t * RDRAM = g_MMU->Rdram();
+        uint8_t * RDRAM = m_MMU.Rdram();
         uint8_t * DISK = g_Disk->GetDiskAddressBuffer();
         for (i = 0; i < PI_RD_LEN_REG; i++)
         {
@@ -262,7 +268,7 @@ void PeripheralInterfaceHandler::PI_DMA_READ()
     {
         uint32_t i;
         uint8_t * ROM = g_Rom->GetRomAddress();
-        uint8_t * RDRAM = g_MMU->Rdram();
+        uint8_t * RDRAM = m_MMU.Rdram();
 
         ProtectMemory(ROM, g_Rom->GetRomSize(), MEM_READWRITE);
         PI_CART_ADDR_REG -= 0x10000000;
@@ -284,9 +290,9 @@ void PeripheralInterfaceHandler::PI_DMA_READ()
         }
         PI_CART_ADDR_REG += 0x10000000;
 
-        if (!g_System->DmaUsed())
+        if (!m_DMAUsed)
         {
-            g_System->SetDmaUsed(true);
+            m_DMAUsed = true;
             OnFirstDMA();
         }
         if (g_Recompiler && g_System->bSMM_PIDMA())
@@ -337,9 +343,9 @@ void PeripheralInterfaceHandler::PI_DMA_WRITE()
         g_Debugger->PIDMAWriteStarted();
     }
 
-    if (!g_System->DmaUsed())
+    if (!m_DMAUsed)
     {
-        g_System->SetDmaUsed(true);
+        m_DMAUsed = true;
         OnFirstDMA();
     }
 

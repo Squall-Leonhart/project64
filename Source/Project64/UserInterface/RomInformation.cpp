@@ -1,4 +1,5 @@
 #include "stdafx.h"
+
 #include "RomInformation.h"
 #include <Project64-core/N64System/N64Disk.h>
 
@@ -107,6 +108,7 @@ DWORD CALLBACK RomInfoProc(HWND hDlg, DWORD uMsg, DWORD wParam, DWORD lParam)
             switch (RomHeader[0x38])
             {
             case 'C': SetDlgItemText(hDlg, IDC_INFO_MEDIA, L"N64 Cartridge (Disk Compatible)"); break;
+            case 'M': SetDlgItemText(hDlg, IDC_INFO_MEDIA, L"N64 Development Cartridge"); break;
             case 'N': SetDlgItemText(hDlg, IDC_INFO_MEDIA, L"N64 Cartridge"); break;
             case 'Z': SetDlgItemText(hDlg, IDC_INFO_MEDIA, L"Aleck64"); break;
             case 0:   SetDlgItemText(hDlg, IDC_INFO_MEDIA, L"None"); break;

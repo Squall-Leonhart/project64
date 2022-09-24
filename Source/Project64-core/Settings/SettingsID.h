@@ -236,10 +236,11 @@ enum SettingID
 
     // Debugger
     Debugger_Enabled,
-    Debugger_ShowTLBMisses,
-    Debugger_ShowUnhandledMemory,
+    Debugger_EndOnPermLoop,
+    Debugger_BreakOnUnhandledMemory,
+    Debugger_BreakOnAddressError,
+    Debugger_StepOnBreakOpCode,
     Debugger_ShowPifErrors,
-    Debugger_ShowDivByZero,
     Debugger_RecordRecompilerAsm,
     Debugger_DisableGameFixes,
     Debugger_AppLogLevel,

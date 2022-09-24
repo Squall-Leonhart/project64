@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include <Project64-core/N64System/Recompiler/CodeSection.h>
-#include <Project64-core/N64System/Mips/OpCode.h>
+#include <Project64-core/N64System/Mips/R4300iOpcode.h>
+#include <Project64-core/N64System/Mips/R4300iInstruction.h>
 #include <Project64-core/N64System/SystemGlobals.h>
 #include <Project64-core/N64System/Mips/MemoryVirtualMem.h>
-#include <Project64-core/N64System/Recompiler/RecompilerCodeLog.h>
 #include <Project64-core/N64System/Recompiler/CodeBlock.h>
 #include <Project64-core/N64System/N64System.h>
 #include <Project64-core/N64System/Interpreter/InterpreterCPU.h>
@@ -12,140 +12,8 @@
 #include <Project64-core/ExceptionHandler.h>
 #include <Project64-core/Debugger.h>
 
-void InPermLoop();
-
-bool DelaySlotEffectsCompare(uint32_t PC, uint32_t Reg1, uint32_t Reg2);
-
-static bool OpHasDelaySlot(const OPCODE & Opcode)
-{
-    if (Opcode.op == R4300i_J || 
-        Opcode.op == R4300i_JAL ||
-        Opcode.op == R4300i_BEQ ||
-        Opcode.op == R4300i_BNE ||
-        Opcode.op == R4300i_BLEZ ||
-        Opcode.op == R4300i_BGTZ ||
-        Opcode.op == R4300i_BEQL ||
-        Opcode.op == R4300i_BNEL ||
-        Opcode.op == R4300i_BLEZL ||
-        Opcode.op == R4300i_BGTZL)
-    {
-        return true;
-    }
-    else if (Opcode.op == R4300i_SPECIAL)
-    {
-        if (Opcode.funct == R4300i_SPECIAL_JR ||
-            Opcode.funct == R4300i_SPECIAL_JALR)
-        {
-            return true;
-        }
-    }
-    else if (Opcode.op == R4300i_REGIMM)
-    {
-        if (Opcode.rt == R4300i_REGIMM_BLTZ || 
-            Opcode.rt == R4300i_REGIMM_BGEZ ||
-            Opcode.rt == R4300i_REGIMM_BLTZL ||
-            Opcode.rt == R4300i_REGIMM_BGEZL ||
-            Opcode.rt == R4300i_REGIMM_BLTZAL ||
-            Opcode.rt == R4300i_REGIMM_BGEZAL ||
-            Opcode.rt == R4300i_REGIMM_BLTZALL ||
-            Opcode.rt == R4300i_REGIMM_BGEZALL)
-        {
-            return true;
-        }
-    }
-    else if (Opcode.op == R4300i_CP1 && Opcode.fmt == R4300i_COP1_BC)
-    {
-        return true;
-    }
-    return false;
-}
-
-static bool DelaySlotEffectsJump(uint32_t JumpPC)
-{
-    OPCODE Command;
-
-    if (!g_MMU->MemoryValue32(JumpPC, Command.Hex))
-    {
-        return true;
-    }
-
-    switch (Command.op)
-    {
-    case R4300i_SPECIAL:
-        switch (Command.funct)
-        {
-        case R4300i_SPECIAL_JR: return DelaySlotEffectsCompare(JumpPC, Command.rs, 0);
-        case R4300i_SPECIAL_JALR: return DelaySlotEffectsCompare(JumpPC, Command.rs, 31);
-        }
-        break;
-    case R4300i_REGIMM:
-        switch (Command.rt)
-        {
-        case R4300i_REGIMM_BLTZ:
-        case R4300i_REGIMM_BGEZ:
-        case R4300i_REGIMM_BLTZL:
-        case R4300i_REGIMM_BGEZL:
-        case R4300i_REGIMM_BLTZAL:
-        case R4300i_REGIMM_BGEZAL:
-            return DelaySlotEffectsCompare(JumpPC, Command.rs, 0);
-        }
-        break;
-    case R4300i_JAL:
-    case R4300i_SPECIAL_JALR: return DelaySlotEffectsCompare(JumpPC, 31, 0); break;
-    case R4300i_J: return false;
-    case R4300i_BEQ:
-    case R4300i_BNE:
-    case R4300i_BLEZ:
-    case R4300i_BGTZ:
-        return DelaySlotEffectsCompare(JumpPC, Command.rs, Command.rt);
-    case R4300i_CP1:
-        switch (Command.fmt)
-        {
-        case R4300i_COP1_BC:
-            switch (Command.ft)
-            {
-            case R4300i_COP1_BC_BCF:
-            case R4300i_COP1_BC_BCT:
-            case R4300i_COP1_BC_BCFL:
-            case R4300i_COP1_BC_BCTL:
-                {
-                    bool EffectDelaySlot = false;
-                    OPCODE NewCommand;
-
-                    if (!g_MMU->MemoryValue32(JumpPC + 4, NewCommand.Hex))
-                    {
-                        return true;
-                    }
-
-                    if (NewCommand.op == R4300i_CP1)
-                    {
-                        if (NewCommand.fmt == R4300i_COP1_S && (NewCommand.funct & 0x30) == 0x30)
-                        {
-                            EffectDelaySlot = true;
-                        }
-                        if (NewCommand.fmt == R4300i_COP1_D && (NewCommand.funct & 0x30) == 0x30)
-                        {
-                            EffectDelaySlot = true;
-                        }
-                    }
-                    return EffectDelaySlot;
-                }
-                break;
-            }
-            break;
-        }
-        break;
-    case R4300i_BEQL:
-    case R4300i_BNEL:
-    case R4300i_BLEZL:
-    case R4300i_BGTZL:
-        return DelaySlotEffectsCompare(JumpPC, Command.rs, Command.rt);
-    }
-    return true;
-}
-
-CCodeSection::CCodeSection(CCodeBlock * CodeBlock, uint32_t EnterPC, uint32_t ID, bool LinkAllowed) :
-    m_BlockInfo(CodeBlock),
+CCodeSection::CCodeSection(CCodeBlock & CodeBlock, uint32_t EnterPC, uint32_t ID, bool LinkAllowed) :
+    m_CodeBlock(CodeBlock),
     m_SectionID(ID),
     m_EnterPC(EnterPC),
     m_EndPC((uint32_t)-1),
@@ -158,9 +26,12 @@ CCodeSection::CCodeSection(CCodeBlock * CodeBlock, uint32_t EnterPC, uint32_t ID
     m_CompiledLocation(nullptr),
     m_InLoop(false),
     m_DelaySlot(false),
-    m_RecompilerOps(CodeBlock->RecompilerOps())
+    m_RecompilerOps(CodeBlock.RecompilerOps()),
+    m_RegEnter(CodeBlock, CodeBlock.RecompilerOps()->Assembler()),
+    m_Jump(CodeBlock),
+    m_Cont(CodeBlock)
 {
-    CPU_Message("%s: ID %d EnterPC 0x%08X", __FUNCTION__, ID, EnterPC);
+    m_CodeBlock.Log("%s: ID %d EnterPC 0x%08X", __FUNCTION__, ID, EnterPC);
     m_RecompilerOps->SetCurrentSection(this);
 }
 
@@ -191,7 +62,10 @@ void CCodeSection::GenerateSectionLinkage()
     // Handle permanent loop
     if (m_RecompilerOps->GetCurrentPC() == m_Jump.TargetPC && (m_Cont.FallThrough == false))
     {
-        if (!DelaySlotEffectsJump(m_RecompilerOps->GetCurrentPC()))
+        R4300iOpcode JumpOp, DelaySlot;
+        if (g_MMU->MemoryValue32(m_RecompilerOps->GetCurrentPC(), JumpOp.Value) &&
+            g_MMU->MemoryValue32(m_RecompilerOps->GetCurrentPC() + 4, DelaySlot.Value) &&
+            !R4300iInstruction(m_RecompilerOps->GetCurrentPC(), JumpOp.Value).DelaySlotEffectsCompare(DelaySlot.Value))
         {
             m_RecompilerOps->CompileInPermLoop(m_Jump.RegSet, m_RecompilerOps->GetCurrentPC());
         }
@@ -211,7 +85,7 @@ void CCodeSection::GenerateSectionLinkage()
             else if (TargetSection[i] == nullptr && JumpInfo[i]->FallThrough)
             {
                 m_RecompilerOps->LinkJump(*JumpInfo[i], (uint32_t)-1);
-                m_RecompilerOps->CompileExit(JumpInfo[i]->JumpPC, JumpInfo[i]->TargetPC, JumpInfo[i]->RegSet, JumpInfo[i]->ExitReason);
+                m_RecompilerOps->CompileExit(JumpInfo[i]->JumpPC, JumpInfo[i]->TargetPC, JumpInfo[i]->RegSet, JumpInfo[i]->Reason);
                 JumpInfo[i]->FallThrough = false;
             }
             else if (TargetSection[i] != nullptr && JumpInfo[i] != nullptr)
@@ -219,7 +93,7 @@ void CCodeSection::GenerateSectionLinkage()
                 if (!JumpInfo[i]->FallThrough) { continue; }
                 if (JumpInfo[i]->TargetPC == TargetSection[i]->m_EnterPC) { continue; }
                 m_RecompilerOps->LinkJump(*JumpInfo[i], (uint32_t)-1);
-                m_RecompilerOps->CompileExit(JumpInfo[i]->JumpPC, JumpInfo[i]->TargetPC, JumpInfo[i]->RegSet, JumpInfo[i]->ExitReason);
+                m_RecompilerOps->CompileExit(JumpInfo[i]->JumpPC, JumpInfo[i]->TargetPC, JumpInfo[i]->RegSet, JumpInfo[i]->Reason);
                 //FreeSection(TargetSection[i],Section);
             }
         }
@@ -249,13 +123,13 @@ void CCodeSection::GenerateSectionLinkage()
             {
                 if (JumpInfo[i]->PermLoop)
                 {
-                    CPU_Message("PermLoop *** 1");
+                    m_CodeBlock.Log("PermLoop *** 1");
                     m_RecompilerOps->CompileInPermLoop(JumpInfo[i]->RegSet, JumpInfo[i]->TargetPC);
                 }
                 else
                 {
                     m_RecompilerOps->UpdateCounters(JumpInfo[i]->RegSet, true, true);
-                    CPU_Message("CompileSystemCheck 5");
+                    m_CodeBlock.Log("CompileSystemCheck 5");
                     m_RecompilerOps->CompileSystemCheck(JumpInfo[i]->TargetPC, JumpInfo[i]->RegSet);
                 }
             }
@@ -283,7 +157,7 @@ void CCodeSection::GenerateSectionLinkage()
             if (Parent->m_InLoop) { continue; }
             if (JumpInfo[i]->PermLoop)
             {
-                CPU_Message("PermLoop *** 2");
+                m_CodeBlock.Log("PermLoop *** 2");
                 m_RecompilerOps->CompileInPermLoop(JumpInfo[i]->RegSet, JumpInfo[i]->TargetPC);
             }
             if (JumpInfo[i]->FallThrough)
@@ -301,32 +175,32 @@ void CCodeSection::GenerateSectionLinkage()
             if (JumpInfo[i]->TargetPC < m_RecompilerOps->GetCurrentPC())
             {
                 m_RecompilerOps->UpdateCounters(JumpInfo[i]->RegSet, true, true);
-                CPU_Message("CompileSystemCheck 7");
+                m_CodeBlock.Log("CompileSystemCheck 7");
                 m_RecompilerOps->CompileSystemCheck(JumpInfo[i]->TargetPC, JumpInfo[i]->RegSet);
             }
         }
     }
 
-    CPU_Message("====== End of Section %d ======", m_SectionID);
+    m_CodeBlock.Log("====== End of Section %d ======", m_SectionID);
 
     for (i = 0; i < 2; i++)
     {
-        if (JumpInfo[i]->FallThrough && (TargetSection[i] == nullptr || !TargetSection[i]->GenerateNativeCode(m_BlockInfo->NextTest())))
+        if (JumpInfo[i]->FallThrough && (TargetSection[i] == nullptr || !TargetSection[i]->GenerateNativeCode(m_CodeBlock.NextTest())))
         {
             JumpInfo[i]->FallThrough = false;
             m_RecompilerOps->JumpToUnknown(JumpInfo[i]);
         }
     }
 
-    //CPU_Message("Section %d",m_SectionID);
+    //CodeLog("Section %d",m_SectionID);
     for (i = 0; i < 2; i++)
     {
         if (JumpInfo[i]->LinkLocation == nullptr) { continue; }
         if (TargetSection[i] == nullptr)
         {
-            CPU_Message("ExitBlock (from %d):", m_SectionID);
+            m_CodeBlock.Log("ExitBlock (from %d):", m_SectionID);
             m_RecompilerOps->LinkJump(*JumpInfo[i], (uint32_t)-1);
-            m_RecompilerOps->CompileExit(JumpInfo[i]->JumpPC, JumpInfo[i]->TargetPC, JumpInfo[i]->RegSet, JumpInfo[i]->ExitReason);
+            m_RecompilerOps->CompileExit(JumpInfo[i]->JumpPC, JumpInfo[i]->TargetPC, JumpInfo[i]->RegSet, JumpInfo[i]->Reason);
             continue;
         }
         if (JumpInfo[i]->TargetPC != TargetSection[i]->m_EnterPC)
@@ -335,13 +209,13 @@ void CCodeSection::GenerateSectionLinkage()
         }
         if (TargetSection[i]->m_CompiledLocation == nullptr)
         {
-            TargetSection[i]->GenerateNativeCode(m_BlockInfo->NextTest());
+            TargetSection[i]->GenerateNativeCode(m_CodeBlock.NextTest());
         }
         else
         {
             stdstr_f Label("Section_%d (from %d):", TargetSection[i]->m_SectionID, m_SectionID);
 
-            CPU_Message(Label.c_str());
+            m_CodeBlock.Log(Label.c_str());
             m_RecompilerOps->LinkJump(*JumpInfo[i], (uint32_t)-1);
             m_RecompilerOps->SetRegWorkingSet(JumpInfo[i]->RegSet);
             if (JumpInfo[i]->TargetPC <= JumpInfo[i]->JumpPC)
@@ -349,12 +223,12 @@ void CCodeSection::GenerateSectionLinkage()
                 m_RecompilerOps->UpdateCounters(m_RecompilerOps->GetRegWorkingSet(), true, true);
                 if (JumpInfo[i]->PermLoop)
                 {
-                    CPU_Message("PermLoop *** 3");
+                    m_CodeBlock.Log("PermLoop *** 3");
                     m_RecompilerOps->CompileInPermLoop(m_RecompilerOps->GetRegWorkingSet(), JumpInfo[i]->TargetPC);
                 }
                 else
                 {
-                    CPU_Message("CompileSystemCheck 9");
+                    m_CodeBlock.Log("CompileSystemCheck 9");
                     m_RecompilerOps->CompileSystemCheck(JumpInfo[i]->TargetPC, m_RecompilerOps->GetRegWorkingSet());
                 }
             }
@@ -377,7 +251,7 @@ void CCodeSection::SetJumpAddress(uint32_t JumpPC, uint32_t TargetPC, bool PermL
 {
     m_Jump.JumpPC = JumpPC;
     m_Jump.TargetPC = TargetPC;
-    m_Jump.BranchLabel.Format("0x%08X", TargetPC);
+    m_Jump.BranchLabel = stdstr_f("0x%08X", TargetPC);
     m_Jump.PermLoop = PermLoop;
 }
 
@@ -385,7 +259,7 @@ void CCodeSection::SetContinueAddress(uint32_t JumpPC, uint32_t TargetPC)
 {
     m_Cont.JumpPC = JumpPC;
     m_Cont.TargetPC = TargetPC;
-    m_Cont.BranchLabel.Format("0x%08X", TargetPC);
+    m_Cont.BranchLabel = stdstr_f("0x%08X", TargetPC);
 }
 
 bool CCodeSection::ParentContinue()
@@ -396,7 +270,7 @@ bool CCodeSection::ParentContinue()
         {
             CCodeSection * Parent = *iter;
             if (Parent->m_CompiledLocation != nullptr) { continue; }
-            if (IsAllParentLoops(Parent, true, m_BlockInfo->NextTest())) { continue; }
+            if (IsAllParentLoops(Parent, true, m_CodeBlock.NextTest())) { continue; }
             return false;
         }
         m_RecompilerOps->SetCurrentSection(this);
@@ -431,21 +305,22 @@ bool CCodeSection::GenerateNativeCode(uint32_t Test)
     m_RecompilerOps->SetCurrentPC(m_EnterPC);
     m_RecompilerOps->SetNextStepType(m_DelaySlot ? PIPELINE_STAGE_JUMP : PIPELINE_STAGE_NORMAL);
 
-    if (m_RecompilerOps->GetCurrentPC() < m_BlockInfo->VAddrFirst())
+    if (m_RecompilerOps->GetCurrentPC() < m_CodeBlock.VAddrFirst())
     {
-        m_BlockInfo->SetVAddrFirst(m_RecompilerOps->GetCurrentPC());
+        m_CodeBlock.SetVAddrFirst(m_RecompilerOps->GetCurrentPC());
     }
 
     uint32_t ContinueSectionPC = m_ContinueSection ? m_ContinueSection->m_EnterPC : (uint32_t)-1;
-    const OPCODE & Opcode = m_RecompilerOps->GetOpcode();
+    const R4300iOpcode & Opcode = m_RecompilerOps->GetOpcode();
+    R4300iInstruction Instruction(m_RecompilerOps->GetCurrentPC(), Opcode.Value);
     do
     {
-        if (m_RecompilerOps->GetCurrentPC() > m_BlockInfo->VAddrLast())
+        if (m_RecompilerOps->GetCurrentPC() > m_CodeBlock.VAddrLast())
         {
-            m_BlockInfo->SetVAddrLast(m_RecompilerOps->GetCurrentPC());
+            m_CodeBlock.SetVAddrLast(m_RecompilerOps->GetCurrentPC());
         }
 
-        if (isDebugging() && HaveExecutionBP() && OpHasDelaySlot(Opcode) && g_Debugger->ExecutionBP(m_RecompilerOps->GetCurrentPC() + 4))
+        if (isDebugging() && HaveExecutionBP() && Instruction.HasDelaySlot() && g_Debugger->ExecutionBP(m_RecompilerOps->GetCurrentPC() + 4))
         {
             m_RecompilerOps->CompileExecuteDelaySlotBP();
             break;
@@ -508,12 +383,12 @@ bool CCodeSection::GenerateNativeCode(uint32_t Test)
             case R4300i_SPECIAL_DSLL32: m_RecompilerOps->SPECIAL_DSLL32(); break;
             case R4300i_SPECIAL_DSRL32: m_RecompilerOps->SPECIAL_DSRL32(); break;
             case R4300i_SPECIAL_DSRA32: m_RecompilerOps->SPECIAL_DSRA32(); break;
-            case R4300i_SPECIAL_TEQ: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTEQ); break;
-            case R4300i_SPECIAL_TNE: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTNE); break;
-            case R4300i_SPECIAL_TGE: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTGE); break;
-            case R4300i_SPECIAL_TGEU: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTGEU); break;
-            case R4300i_SPECIAL_TLT: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTLT); break;
-            case R4300i_SPECIAL_TLTU: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTLTU); break;
+            case R4300i_SPECIAL_TEQ: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TEQ); break;
+            case R4300i_SPECIAL_TNE: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TNE); break;
+            case R4300i_SPECIAL_TGE: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TGE); break;
+            case R4300i_SPECIAL_TGEU: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TGEU); break;
+            case R4300i_SPECIAL_TLT: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TLT); break;
+            case R4300i_SPECIAL_TLTU: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TLTU); break;
                 break;
             default:
                 m_RecompilerOps->UnknownOpcode(); break;
@@ -522,26 +397,26 @@ bool CCodeSection::GenerateNativeCode(uint32_t Test)
         case R4300i_REGIMM:
             switch (Opcode.rt)
             {
-            case R4300i_REGIMM_BLTZ: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeBLTZ, CRecompilerOps::BranchTypeRs, false); break;
-            case R4300i_REGIMM_BGEZ: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeBGEZ, CRecompilerOps::BranchTypeRs, false); break;
-            case R4300i_REGIMM_BLTZL: m_RecompilerOps->Compile_BranchLikely(CRecompilerOps::CompareTypeBLTZ, false); break;
-            case R4300i_REGIMM_BGEZL: m_RecompilerOps->Compile_BranchLikely(CRecompilerOps::CompareTypeBGEZ, false); break;
-            case R4300i_REGIMM_BLTZAL: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeBLTZ, CRecompilerOps::BranchTypeRs, true); break;
-            case R4300i_REGIMM_BGEZAL: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeBGEZ, CRecompilerOps::BranchTypeRs, true); break;
-            case R4300i_REGIMM_TEQI: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTEQI); break;
-            case R4300i_REGIMM_TNEI: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTNEI); break;
-            case R4300i_REGIMM_TGEI: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTGEI); break;
-            case R4300i_REGIMM_TGEIU: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTGEIU); break;
-            case R4300i_REGIMM_TLTI: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTLTI); break;
-            case R4300i_REGIMM_TLTIU: m_RecompilerOps->Compile_TrapCompare(CRecompilerOps::TRAP_COMPARE::CompareTypeTLTIU); break;
+            case R4300i_REGIMM_BLTZ: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_BLTZ, false); break;
+            case R4300i_REGIMM_BGEZ: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_BGEZ, false); break;
+            case R4300i_REGIMM_BLTZL: m_RecompilerOps->Compile_BranchLikely(RecompilerBranchCompare_BLTZ, false); break;
+            case R4300i_REGIMM_BGEZL: m_RecompilerOps->Compile_BranchLikely(RecompilerBranchCompare_BGEZ, false); break;
+            case R4300i_REGIMM_BLTZAL: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_BLTZ, true); break;
+            case R4300i_REGIMM_BGEZAL: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_BGEZ, true); break;
+            case R4300i_REGIMM_TEQI: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TEQI); break;
+            case R4300i_REGIMM_TNEI: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TNEI); break;
+            case R4300i_REGIMM_TGEI: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TGEI); break;
+            case R4300i_REGIMM_TGEIU: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TGEIU); break;
+            case R4300i_REGIMM_TLTI: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TLTI); break;
+            case R4300i_REGIMM_TLTIU: m_RecompilerOps->Compile_TrapCompare(RecompilerTrapCompare_TLTIU); break;
             default:
                 m_RecompilerOps->UnknownOpcode(); break;
             }
             break;
-        case R4300i_BEQ: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeBEQ, CRecompilerOps::BranchTypeRsRt, false); break;
-        case R4300i_BNE: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeBNE, CRecompilerOps::BranchTypeRsRt, false); break;
-        case R4300i_BGTZ: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeBGTZ, CRecompilerOps::BranchTypeRs, false); break;
-        case R4300i_BLEZ: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeBLEZ, CRecompilerOps::BranchTypeRs, false); break;
+        case R4300i_BEQ: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_BEQ, false); break;
+        case R4300i_BNE: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_BNE, false); break;
+        case R4300i_BGTZ: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_BGTZ, false); break;
+        case R4300i_BLEZ: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_BLEZ, false); break;
         case R4300i_J: m_RecompilerOps->J(); break;
         case R4300i_JAL: m_RecompilerOps->JAL(); break;
         case R4300i_ADDI: m_RecompilerOps->ADDI(); break;
@@ -588,10 +463,10 @@ bool CCodeSection::GenerateNativeCode(uint32_t Test)
             case R4300i_COP1_BC:
                 switch (Opcode.ft)
                 {
-                case R4300i_COP1_BC_BCF: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeCOP1BCF, CRecompilerOps::BranchTypeCop1, false); break;
-                case R4300i_COP1_BC_BCT: m_RecompilerOps->Compile_Branch(CRecompilerOps::CompareTypeCOP1BCT, CRecompilerOps::BranchTypeCop1, false); break;
-                case R4300i_COP1_BC_BCFL: m_RecompilerOps->Compile_BranchLikely(CRecompilerOps::CompareTypeCOP1BCF, false); break;
-                case R4300i_COP1_BC_BCTL: m_RecompilerOps->Compile_BranchLikely(CRecompilerOps::CompareTypeCOP1BCT, false); break;
+                case R4300i_COP1_BC_BCF: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_COP1BCF, false); break;
+                case R4300i_COP1_BC_BCT: m_RecompilerOps->Compile_Branch(RecompilerBranchCompare_COP1BCT, false); break;
+                case R4300i_COP1_BC_BCFL: m_RecompilerOps->Compile_BranchLikely(RecompilerBranchCompare_COP1BCF, false); break;
+                case R4300i_COP1_BC_BCTL: m_RecompilerOps->Compile_BranchLikely(RecompilerBranchCompare_COP1BCT, false); break;
                 default:
                     m_RecompilerOps->UnknownOpcode(); break;
                 }
@@ -688,10 +563,11 @@ bool CCodeSection::GenerateNativeCode(uint32_t Test)
                 m_RecompilerOps->UnknownOpcode(); break;
             }
             break;
-        case R4300i_BEQL: m_RecompilerOps->Compile_BranchLikely(CRecompilerOps::CompareTypeBEQ, false); break;
-        case R4300i_BNEL: m_RecompilerOps->Compile_BranchLikely(CRecompilerOps::CompareTypeBNE, false); break;
-        case R4300i_BGTZL: m_RecompilerOps->Compile_BranchLikely(CRecompilerOps::CompareTypeBGTZ, false); break;
-        case R4300i_BLEZL: m_RecompilerOps->Compile_BranchLikely(CRecompilerOps::CompareTypeBLEZ, false); break;
+        case R4300i_BEQL: m_RecompilerOps->Compile_BranchLikely(RecompilerBranchCompare_BEQ, false); break;
+        case R4300i_BNEL: m_RecompilerOps->Compile_BranchLikely(RecompilerBranchCompare_BNE, false); break;
+        case R4300i_BGTZL: m_RecompilerOps->Compile_BranchLikely(RecompilerBranchCompare_BGTZ, false); break;
+        case R4300i_BLEZL: m_RecompilerOps->Compile_BranchLikely(RecompilerBranchCompare_BLEZ, false); break;
+        case R4300i_DADDI: m_RecompilerOps->DADDI(); break;
         case R4300i_DADDIU: m_RecompilerOps->DADDIU(); break;
         case R4300i_LDL: m_RecompilerOps->LDL(); break;
         case R4300i_LDR: m_RecompilerOps->LDR(); break;
@@ -735,11 +611,11 @@ bool CCodeSection::GenerateNativeCode(uint32_t Test)
             {
                 if (m_DelaySlot)
                 {
-                    m_RecompilerOps->CompileExit(m_RecompilerOps->GetCurrentPC(), m_Jump.TargetPC, m_RecompilerOps->GetRegWorkingSet(), CExitInfo::Normal);
+                    m_RecompilerOps->CompileExit(m_RecompilerOps->GetCurrentPC(), m_Jump.TargetPC, m_RecompilerOps->GetRegWorkingSet(), ExitReason_Normal);
                 }
                 else
                 {
-                    m_RecompilerOps->CompileExit(m_RecompilerOps->GetCurrentPC(), m_RecompilerOps->GetCurrentPC() + 4, m_RecompilerOps->GetRegWorkingSet(), CExitInfo::Normal);
+                    m_RecompilerOps->CompileExit(m_RecompilerOps->GetCurrentPC(), m_RecompilerOps->GetCurrentPC() + 4, m_RecompilerOps->GetRegWorkingSet(), ExitReason_Normal);
                 }
                 m_RecompilerOps->SetNextStepType(PIPELINE_STAGE_END_BLOCK);
             }
@@ -763,7 +639,7 @@ bool CCodeSection::GenerateNativeCode(uint32_t Test)
             // Do nothing, the block will end
             break;
         default:
-            CPU_Message("m_RecompilerOps->GetNextStepType() = %d", m_RecompilerOps->GetNextStepType());
+            m_CodeBlock.Log("m_RecompilerOps->GetNextStepType() = %d", m_RecompilerOps->GetNextStepType());
             g_Notify->BreakPoint(__FILE__, __LINE__);
             break;
         }
@@ -779,7 +655,7 @@ bool CCodeSection::GenerateNativeCode(uint32_t Test)
             }
             else
             {
-                m_RecompilerOps->CompileExit(m_Jump.JumpPC, m_Jump.TargetPC, m_RecompilerOps->GetRegWorkingSet(), CExitInfo::Normal);
+                m_RecompilerOps->CompileExit(m_Jump.JumpPC, m_Jump.TargetPC, m_RecompilerOps->GetRegWorkingSet(), ExitReason_Normal);
             }
             m_RecompilerOps->SetNextStepType(PIPELINE_STAGE_END_BLOCK);
         }
@@ -917,11 +793,11 @@ void CCodeSection::DetermineLoop(uint32_t Test, uint32_t Test2, uint32_t TestID)
                 m_Test = Test;
                 if (m_ContinueSection != nullptr)
                 {
-                    m_ContinueSection->DetermineLoop(Test, m_BlockInfo->NextTest(), m_ContinueSection->m_SectionID);
+                    m_ContinueSection->DetermineLoop(Test, m_CodeBlock.NextTest(), m_ContinueSection->m_SectionID);
                 }
                 if (m_JumpSection != nullptr)
                 {
-                    m_JumpSection->DetermineLoop(Test, m_BlockInfo->NextTest(), m_JumpSection->m_SectionID);
+                    m_JumpSection->DetermineLoop(Test, m_CodeBlock.NextTest(), m_JumpSection->m_SectionID);
                 }
             }
         }
@@ -983,7 +859,7 @@ bool CCodeSection::SectionAccessible(uint32_t SectionId, uint32_t Test)
 
 void CCodeSection::UnlinkParent(CCodeSection * Parent, bool ContinueSection)
 {
-    CPU_Message("%s: Section %d Parent: %d ContinueSection = %s", __FUNCTION__, m_SectionID, Parent->m_SectionID, ContinueSection ? "Yes" : "No");
+    m_CodeBlock.Log("%s: Section %d Parent: %d ContinueSection = %s", __FUNCTION__, m_SectionID, Parent->m_SectionID, ContinueSection ? "Yes" : "No");
     if (Parent->m_ContinueSection == this && Parent->m_JumpSection == this)
     {
         g_Notify->BreakPoint(__FILE__, __LINE__);
@@ -1016,7 +892,7 @@ void CCodeSection::UnlinkParent(CCodeSection * Parent, bool ContinueSection)
     bool bRemove = false;
     if (m_ParentSection.size() > 0)
     {
-        if (!m_BlockInfo->SectionAccessible(m_SectionID))
+        if (!m_CodeBlock.SectionAccessible(m_SectionID))
         {
             for (SECTION_LIST::iterator iter = m_ParentSection.begin(); iter != m_ParentSection.end(); iter++)
             {
@@ -1102,13 +978,13 @@ void CCodeSection::DisplaySectionInformation()
         return;
     }
 
-    CPU_Message("====== Section %d ======", m_SectionID);
-    CPU_Message("Start PC: 0x%X", m_EnterPC);
+    m_CodeBlock.Log("====== Section %d ======", m_SectionID);
+    m_CodeBlock.Log("Start PC: 0x%X", m_EnterPC);
     if (g_System->bLinkBlocks())
     {
-        CPU_Message("End PC: 0x%X", m_EndPC);
+        m_CodeBlock.Log("End PC: 0x%X", m_EndPC);
     }
-    CPU_Message("CompiledLocation: 0x%X", m_CompiledLocation);
+    m_CodeBlock.Log("CompiledLocation: 0x%X", m_CompiledLocation);
     if (g_System->bLinkBlocks() && !m_ParentSection.empty())
     {
         stdstr ParentList;
@@ -1121,32 +997,32 @@ void CCodeSection::DisplaySectionInformation()
             }
             ParentList += stdstr_f("%d", Parent->m_SectionID);
         }
-        CPU_Message("Number of parents: %d (%s)", m_ParentSection.size(), ParentList.c_str());
+        m_CodeBlock.Log("Number of parents: %d (%s)", m_ParentSection.size(), ParentList.c_str());
     }
 
     if (g_System->bLinkBlocks())
     {
-        CPU_Message("Jump address: 0x%08X", m_Jump.JumpPC);
-        CPU_Message("Jump target address: 0x%08X", m_Jump.TargetPC);
+        m_CodeBlock.Log("Jump address: 0x%08X", m_Jump.JumpPC);
+        m_CodeBlock.Log("Jump target address: 0x%08X", m_Jump.TargetPC);
         if (m_JumpSection != nullptr)
         {
-            CPU_Message("Jump section: %d", m_JumpSection->m_SectionID);
+            m_CodeBlock.Log("Jump section: %d", m_JumpSection->m_SectionID);
         }
         else
         {
-            CPU_Message("Jump section: None");
+            m_CodeBlock.Log("Jump section: None");
         }
-        CPU_Message("Continue address: 0x%08X", m_Cont.JumpPC);
-        CPU_Message("Continue target address: 0x%08X", m_Cont.TargetPC);
+        m_CodeBlock.Log("Continue address: 0x%08X", m_Cont.JumpPC);
+        m_CodeBlock.Log("Continue target address: 0x%08X", m_Cont.TargetPC);
         if (m_ContinueSection != nullptr)
         {
-            CPU_Message("Continue section: %d", m_ContinueSection->m_SectionID);
+            m_CodeBlock.Log("Continue section: %d", m_ContinueSection->m_SectionID);
         }
         else
         {
-            CPU_Message("Continue section: None");
+            m_CodeBlock.Log("Continue section: None");
         }
-        CPU_Message("In loop: %s", m_InLoop ? "Yes" : "No");
+        m_CodeBlock.Log("In loop: %s", m_InLoop ? "Yes" : "No");
     }
-    CPU_Message("=======================");
+    m_CodeBlock.Log("=======================");
 }

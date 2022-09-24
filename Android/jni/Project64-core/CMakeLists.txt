@@ -25,6 +25,7 @@ add_library(Project64-core STATIC
     N64System/MemoryHandler/CartridgeDomain2Address1Handler.cpp
     N64System/MemoryHandler/CartridgeDomain2Address2Handler.cpp
     N64System/MemoryHandler/DisplayControlRegHandler.cpp
+    N64System/MemoryHandler/ISViewerHandler.cpp
     N64System/MemoryHandler/MIPSInterfaceHandler.cpp
     N64System/MemoryHandler/PeripheralInterfaceHandler.cpp
     N64System/MemoryHandler/PifRamHandler.cpp
@@ -38,8 +39,8 @@ add_library(Project64-core STATIC
     N64System/Mips/GBCart.cpp
     N64System/Mips/MemoryVirtualMem.cpp
     N64System/Mips/Mempak.cpp
-    N64System/Mips/OpcodeName.cpp
     N64System/Mips/PifRam.cpp
+    N64System/Mips/R4300iInstruction.cpp
     N64System/Mips/Register.cpp
     N64System/Mips/Rumblepak.cpp
     N64System/Mips/Transferpak.cpp
@@ -48,12 +49,12 @@ add_library(Project64-core STATIC
     N64System/Mips/TLB.cpp
     N64System/Recompiler/CodeBlock.cpp
     N64System/Recompiler/CodeSection.cpp
-    N64System/Recompiler/SectionInfo.cpp
+    N64System/Recompiler/ExitInfo.cpp
     N64System/Recompiler/FunctionInfo.cpp
     N64System/Recompiler/FunctionMap.cpp
+    N64System/Recompiler/JumpInfo.cpp
     N64System/Recompiler/LoopAnalysis.cpp
     N64System/Recompiler/Recompiler.cpp
-    N64System/Recompiler/RecompilerCodeLog.cpp
     N64System/Recompiler/RecompilerMemory.cpp
     N64System/Recompiler/RegBase.cpp
     N64System/Recompiler/Aarch64/Aarch64RegInfo.cpp

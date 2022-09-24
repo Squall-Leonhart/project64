@@ -1,20 +1,18 @@
 #pragma once
 
-#include <stdafx.h>
-
-#include <Project64-core/N64System/Mips/OpCode.h>
+#include <Project64-core/N64System/Mips/R4300iOpcode.h>
 
 class COpInfo
 {
 public:
 
-    OPCODE m_OpCode;
+    R4300iOpcode m_OpCode;
 
     COpInfo()
     {
     }
 
-    inline COpInfo(OPCODE opcode):
+    inline COpInfo(R4300iOpcode opcode):
         m_OpCode(opcode)
     {
     }
@@ -123,7 +121,7 @@ public:
 
     bool IsNOP()
     {
-        if (m_OpCode.Hex == 0)
+        if (m_OpCode.Value == 0)
         {
             return true;
         }

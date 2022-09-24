@@ -35,6 +35,9 @@
     <PreBuildEvent>
       <Command>"$(SolutionDir)Source\Script\UpdateVersion.cmd" "$(Configuration)" "$(Platform)" "$(SolutionDir)Source\Project64-core\Version.h.in" "$(SolutionDir)Source\Project64-core\Version.h"</Command>
     </PreBuildEvent>
+    <Lib>
+      <AdditionalOptions>/ignore:4221%(AdditionalOptions)</AdditionalOptions>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="3rdParty\7zip.cpp">
@@ -59,6 +62,7 @@
     <ClCompile Include="N64System\MemoryHandler\CartridgeDomain2Address1Handler.cpp" />
     <ClCompile Include="N64System\MemoryHandler\CartridgeDomain2Address2Handler.cpp" />
     <ClCompile Include="N64System\MemoryHandler\DisplayControlRegHandler.cpp" />
+    <ClCompile Include="N64System\MemoryHandler\ISViewerHandler.cpp" />
     <ClCompile Include="N64System\MemoryHandler\MIPSInterfaceHandler.cpp" />
     <ClCompile Include="N64System\MemoryHandler\PeripheralInterfaceHandler.cpp" />
     <ClCompile Include="N64System\MemoryHandler\PifRamHandler.cpp" />
@@ -72,8 +76,8 @@
     <ClCompile Include="N64System\Mips\GBCart.cpp" />
     <ClCompile Include="N64System\Mips\MemoryVirtualMem.cpp" />
     <ClCompile Include="N64System\Mips\Mempak.cpp" />
-    <ClCompile Include="N64System\Mips\OpcodeName.cpp" />
     <ClCompile Include="N64System\Mips\PifRam.cpp" />
+    <ClCompile Include="N64System\Mips\R4300iInstruction.cpp" />
     <ClCompile Include="N64System\Mips\Register.cpp" />
     <ClCompile Include="N64System\Mips\Rumblepak.cpp" />
     <ClCompile Include="N64System\Mips\SystemEvents.cpp" />
@@ -89,14 +93,17 @@
     <ClCompile Include="N64System\Recompiler\Arm\ArmRegInfo.cpp" />
     <ClCompile Include="N64System\Recompiler\CodeBlock.cpp" />
     <ClCompile Include="N64System\Recompiler\CodeSection.cpp" />
+    <ClCompile Include="N64System\Recompiler\ExitInfo.cpp" />
     <ClCompile Include="N64System\Recompiler\FunctionInfo.cpp" />
     <ClCompile Include="N64System\Recompiler\FunctionMap.cpp" />
+    <ClCompile Include="N64System\Recompiler\JumpInfo.cpp" />
     <ClCompile Include="N64System\Recompiler\LoopAnalysis.cpp" />
     <ClCompile Include="N64System\Recompiler\Recompiler.cpp" />
-    <ClCompile Include="N64System\Recompiler\RecompilerCodeLog.cpp" />
     <ClCompile Include="N64System\Recompiler\RecompilerMemory.cpp" />
     <ClCompile Include="N64System\Recompiler\RegBase.cpp" />
-    <ClCompile Include="N64System\Recompiler\SectionInfo.cpp" />
+    <ClCompile Include="N64System\Recompiler\x64-86\x64ops.cpp" />
+    <ClCompile Include="N64System\Recompiler\x64-86\x64RecompilerOps.cpp" />
+    <ClCompile Include="N64System\Recompiler\x64-86\x64RegInfo.cpp" />
     <ClCompile Include="N64System\Recompiler\x86\x86ops.cpp" />
     <ClCompile Include="N64System\Recompiler\x86\x86RecompilerOps.cpp" />
     <ClCompile Include="N64System\Recompiler\x86\x86RegInfo.cpp" />
@@ -172,6 +179,7 @@
     <ClInclude Include="N64System\MemoryHandler\CartridgeDomain2Address1Handler.h" />
     <ClInclude Include="N64System\MemoryHandler\CartridgeDomain2Address2Handler.h" />
     <ClInclude Include="N64System\MemoryHandler\DisplayControlRegHandler.h" />
+    <ClInclude Include="N64System\MemoryHandler\ISViewerHandler.h" />
     <ClInclude Include="N64System\MemoryHandler\MemoryHandler.h" />
     <ClInclude Include="N64System\MemoryHandler\MIPSInterfaceHandler.h" />
     <ClInclude Include="N64System\MemoryHandler\PeripheralInterfaceHandler.h" />
@@ -188,9 +196,9 @@
     <ClInclude Include="N64System\Mips\GBCart.h" />
     <ClInclude Include="N64System\Mips\MemoryVirtualMem.h" />
     <ClInclude Include="N64System\Mips\Mempak.h" />
-    <ClInclude Include="N64System\Mips\OpCode.h" />
-    <ClInclude Include="N64System\Mips\OpcodeName.h" />
     <ClInclude Include="N64System\Mips\PifRam.h" />
+    <ClInclude Include="N64System\Mips\R4300iInstruction.h" />
+    <ClInclude Include="N64System\Mips\R4300iOpcode.h" />
     <ClInclude Include="N64System\Mips\Register.h" />
     <ClInclude Include="N64System\Mips\Rumblepak.h" />
     <ClInclude Include="N64System\Mips\Sram.h" />
@@ -204,6 +212,7 @@
     <ClInclude Include="N64System\N64System.h" />
     <ClInclude Include="N64System\N64Types.h" />
     <ClInclude Include="N64System\Profiling.h" />
+    <ClInclude Include="N64System\Recompiler\Aarch64\Aarch64RegInfo.h" />
     <ClInclude Include="N64System\Recompiler\Arm\ArmOpCode.h" />
     <ClInclude Include="N64System\Recompiler\Arm\ArmOps.h" />
     <ClInclude Include="N64System\Recompiler\Arm\ArmRecompilerOps.h" />
@@ -216,12 +225,13 @@
     <ClInclude Include="N64System\Recompiler\JumpInfo.h" />
     <ClInclude Include="N64System\Recompiler\LoopAnalysis.h" />
     <ClInclude Include="N64System\Recompiler\Recompiler.h" />
-    <ClInclude Include="N64System\Recompiler\RecompilerCodeLog.h" />
     <ClInclude Include="N64System\Recompiler\RecompilerMemory.h" />
     <ClInclude Include="N64System\Recompiler\RecompilerOps.h" />
     <ClInclude Include="N64System\Recompiler\RegBase.h" />
     <ClInclude Include="N64System\Recompiler\RegInfo.h" />
     <ClInclude Include="N64System\Recompiler\SectionInfo.h" />
+    <ClInclude Include="N64System\Recompiler\x64-86\x64ops.h" />
+    <ClInclude Include="N64System\Recompiler\x64-86\x64RecompilerOps.h" />
     <ClInclude Include="N64System\Recompiler\x64-86\x64RegInfo.h" />
     <ClInclude Include="N64System\Recompiler\x86\x86ops.h" />
     <ClInclude Include="N64System\Recompiler\x86\x86RecompilerOps.h" />

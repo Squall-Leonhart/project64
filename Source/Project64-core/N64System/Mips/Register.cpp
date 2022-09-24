@@ -4,46 +4,225 @@
 #include <Project64-core/N64System/SystemGlobals.h>
 #include <Project64-core/Logging.h>
 
-const char * CRegName::GPR[32] = { "R0", "AT", "V0", "V1", "A0", "A1", "A2", "A3",
-"T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7",
-"S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7",
-"T8", "T9", "K0", "K1", "GP", "SP", "FP", "RA" };
+const char * CRegName::GPR[32] = {
+    "R0",
+    "AT",
+    "V0",
+    "V1",
+    "A0",
+    "A1",
+    "A2",
+    "A3",
+    "T0",
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6",
+    "T7",
+    "S0",
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "S6",
+    "S7",
+    "T8",
+    "T9",
+    "K0",
+    "K1",
+    "GP",
+    "SP",
+    "FP",
+    "RA"
+};
 
-const char *CRegName::GPR_Hi[32] = { "r0.HI", "at.HI", "v0.HI", "v1.HI", "a0.HI", "a1.HI",
-"a2.HI", "a3.HI", "t0.HI", "t1.HI", "t2.HI", "t3.HI",
-"t4.HI", "t5.HI", "t6.HI", "t7.HI", "s0.HI", "s1.HI",
-"s2.HI", "s3.HI", "s4.HI", "s5.HI", "s6.HI", "s7.HI",
-"t8.HI", "t9.HI", "k0.HI", "k1.HI", "gp.HI", "sp.HI",
-"fp.HI", "ra.HI" };
+const char *CRegName::GPR_Hi[32] =
+{
+    "r0.HI",
+    "at.HI",
+    "v0.HI",
+    "v1.HI",
+    "a0.HI",
+    "a1.HI",
+    "a2.HI",
+    "a3.HI",
+    "t0.HI",
+    "t1.HI",
+    "t2.HI",
+    "t3.HI",
+    "t4.HI",
+    "t5.HI",
+    "t6.HI",
+    "t7.HI",
+    "s0.HI",
+    "s1.HI",
+    "s2.HI",
+    "s3.HI",
+    "s4.HI",
+    "s5.HI",
+    "s6.HI",
+    "s7.HI",
+    "t8.HI",
+    "t9.HI",
+    "k0.HI",
+    "k1.HI",
+    "gp.HI",
+    "sp.HI",
+    "fp.HI",
+    "ra.HI"
+};
 
-const char *CRegName::GPR_Lo[32] = { "r0.LO", "at.LO", "v0.LO", "v1.LO", "a0.LO", "a1.LO",
-"a2.LO", "a3.LO", "t0.LO", "t1.LO", "t2.LO", "t3.LO",
-"t4.LO", "t5.LO", "t6.LO", "t7.LO", "s0.LO", "s1.LO",
-"s2.LO", "s3.LO", "s4.LO", "s5.LO", "s6.LO", "s7.LO",
-"t8.LO", "t9.LO", "k0.LO", "k1.LO", "gp.LO", "sp.LO",
-"fp.LO", "ra.LO" };
+const char *CRegName::GPR_Lo[32] =
+{
+    "r0.LO",
+    "at.LO",
+    "v0.LO",
+    "v1.LO",
+    "a0.LO",
+    "a1.LO",
+    "a2.LO",
+    "a3.LO",
+    "t0.LO",
+    "t1.LO",
+    "t2.LO",
+    "t3.LO",
+    "t4.LO",
+    "t5.LO",
+    "t6.LO",
+    "t7.LO",
+    "s0.LO",
+    "s1.LO",
+    "s2.LO",
+    "s3.LO",
+    "s4.LO",
+    "s5.LO",
+    "s6.LO",
+    "s7.LO",
+    "t8.LO",
+    "t9.LO",
+    "k0.LO",
+    "k1.LO",
+    "gp.LO",
+    "sp.LO",
+    "fp.LO",
+    "ra.LO"
+};
 
-const char * CRegName::Cop0[32] = { "Index", "Random", "EntryLo0", "EntryLo1", "Context", "PageMask", "Wired", "",
-"BadVAddr", "Count", "EntryHi", "Compare", "Status", "Cause", "EPC", "PRId",
-"Config", "LLAddr", "WatchLo", "WatchHi", "XContext", "", "", "",
-"", "", "ECC", "CacheErr", "TagLo", "TagHi", "ErrEPC", "" };
+const char * CRegName::Cop0[32] =
+{
+    "Index",
+    "Random",
+    "EntryLo0",
+    "EntryLo1",
+    "Context",
+    "PageMask",
+    "Wired",
+    "Reg7",
+    "BadVAddr",
+    "Count",
+    "EntryHi",
+    "Compare",
+    "Status",
+    "Cause",
+    "EPC",
+    "PRId",
+    "Config",
+    "LLAddr",
+    "WatchLo",
+    "WatchHi",
+    "XContext",
+    "Reg21",
+    "Reg22",
+    "Reg23",
+    "Reg24",
+    "Reg25",
+    "ECC",
+    "CacheErr",
+    "TagLo",
+    "TagHi",
+    "ErrEPC",
+    "Reg31"
+};
 
-const char * CRegName::FPR[32] = { "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7",
-"F8", "F9", "F10", "F11", "F12", "F13", "F14", "F15",
-"F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23",
-"F24", "F25", "F26", "F27", "F28", "F29", "F30", "F31" };
+const char * CRegName::FPR[32] =
+{
+    "F0",
+    "F1",
+    "F2",
+    "F3",
+    "F4",
+    "F5",
+    "F6",
+    "F7",
+    "F8",
+    "F9",
+    "F10",
+    "F11",
+    "F12",
+    "F13",
+    "F14",
+    "F15",
+    "F16",
+    "F17",
+    "F18",
+    "F19",
+    "F20",
+    "F21",
+    "F22",
+    "F23",
+    "F24",
+    "F25",
+    "F26",
+    "F27",
+    "F28",
+    "F29",
+    "F30",
+    "F31"
+};
 
-const char * CRegName::FPR_Ctrl[32] = { "Revision", "Unknown", "Unknown", "Unknown", "Unknown",
-"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-"Unknown", "Unknown", "FCSR" };
+const char * CRegName::FPR_Ctrl[32] =
+{
+    "Revision",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "Unknown",
+    "FCSR"
+};
 
 uint32_t      * CSystemRegisters::_PROGRAM_COUNTER = nullptr;
 MIPS_DWORD    * CSystemRegisters::_GPR = nullptr;
 MIPS_DWORD    * CSystemRegisters::_FPR = nullptr;
-uint32_t      * CSystemRegisters::_CP0 = nullptr;
+uint64_t      * CSystemRegisters::_CP0 = nullptr;
 MIPS_DWORD    * CSystemRegisters::_RegHI = nullptr;
 MIPS_DWORD    * CSystemRegisters::_RegLO = nullptr;
 float        ** CSystemRegisters::_FPR_S;
@@ -52,12 +231,12 @@ uint32_t      * CSystemRegisters::_FPCR = nullptr;
 uint32_t      * CSystemRegisters::_LLBit = nullptr;
 int32_t       * CSystemRegisters::_RoundingModel = nullptr;
 
-CP0registers::CP0registers(uint32_t * _CP0) :
+CP0registers::CP0registers(uint64_t * _CP0) :
     INDEX_REGISTER(_CP0[0]),
     RANDOM_REGISTER(_CP0[1]),
     ENTRYLO0_REGISTER(_CP0[2]),
     ENTRYLO1_REGISTER(_CP0[3]),
-    CONTEXT_REGISTER(_CP0[4]),
+    CONTEXT_REGISTER((COP0Context &)_CP0[4]),
     PAGE_MASK_REGISTER(_CP0[5]),
     WIRED_REGISTER(_CP0[6]),
     BAD_VADDR_REGISTER(_CP0[8]),
@@ -67,7 +246,9 @@ CP0registers::CP0registers(uint32_t * _CP0) :
     STATUS_REGISTER(_CP0[12]),
     CAUSE_REGISTER(_CP0[13]),
     EPC_REGISTER(_CP0[14]),
+    PREVID_REGISTER(_CP0[15]),
     CONFIG_REGISTER(_CP0[16]),
+    XCONTEXT_REGISTER((COP0XContext &)_CP0[20]),
     TAGLO_REGISTER(_CP0[28]),
     TAGHI_REGISTER(_CP0[29]),
     ERROREPC_REGISTER(_CP0[30]),
@@ -153,6 +334,109 @@ void CRegisters::SetAsCurrentSystem()
     _RoundingModel = &m_RoundingModel;
 }
 
+uint64_t CRegisters::Cop0_MF(uint32_t Reg)
+{
+    if (LogCP0reads() && Reg <= 0x1F)
+    {
+        LogMessage("%08X: R4300i read from %s (0x%08X)", (*_PROGRAM_COUNTER), CRegName::Cop0[Reg], m_CP0[Reg]);
+    }
+
+    if (Reg == 9)
+    {
+        g_SystemTimer->UpdateTimers();
+    }
+    return Reg <= 0x1F ? m_CP0[Reg] : 0;
+}
+
+void CRegisters::Cop0_MT(uint32_t Reg, uint64_t Value)
+{
+    if (LogCP0changes() && Reg <= 0x1F)
+    {
+        LogMessage("%08X: Writing 0x%I64U to %s register (originally: 0x%I64U)", (*_PROGRAM_COUNTER), Value, CRegName::Cop0[Reg], m_CP0[Reg]);
+        if (Reg == 11)  // Compare
+        {
+            LogMessage("%08X: Cause register changed from %08X to %08X", (*_PROGRAM_COUNTER), CAUSE_REGISTER, (g_Reg->CAUSE_REGISTER & ~CAUSE_IP7));
+        }
+    }
+
+    switch (Reg)
+    {
+    case 0: // Index
+    case 2: // EntryLo0
+    case 3: // EntryLo1
+    case 5: // PageMask
+    case 7: // Reg7
+    case 8: // BadVaddr
+    case 10: // Entry Hi
+    case 14: // EPC
+    case 15: // PRId
+    case 16: // Config
+    case 17: // LLAdrr
+    case 18: // WatchLo
+    case 19: // WatchHi
+    case 20: // XContext
+    case 21: // Reg21
+    case 22: // Reg22
+    case 23: // Reg23
+    case 24: // Reg24
+    case 25: // Reg25
+    case 26: // ECC
+    case 27: // CacheErr
+    case 28: // Tag lo
+    case 29: // Tag Hi
+    case 30: // ErrEPC
+    case 31: // Reg31
+        m_CP0[Reg] = Value;
+        break;
+    case 6: // Wired
+        g_SystemTimer->UpdateTimers();
+        m_CP0[Reg] = Value;
+        break;
+    case 4: // Context
+        m_CP0[Reg] = Value & 0xFFFFFFFFFF800000;
+        break;
+    case 9: // Count
+        g_SystemTimer->UpdateTimers();
+        m_CP0[Reg] = Value;
+        g_SystemTimer->UpdateCompareTimer();
+        break;
+    case 11: // Compare
+        g_SystemTimer->UpdateTimers();
+        m_CP0[Reg] = Value;
+        FAKE_CAUSE_REGISTER &= ~CAUSE_IP7;
+        g_SystemTimer->UpdateCompareTimer();
+        break;
+    case 12: // Status
+        if ((m_CP0[Reg] & STATUS_FR) != (Value & STATUS_FR))
+        {
+            m_CP0[Reg] = Value;
+            FixFpuLocations();
+        }
+        else
+        {
+            m_CP0[Reg] = Value;
+        }
+        if ((m_CP0[Reg] & 0x18) != 0 && HaveDebugger())
+        {
+            g_Notify->DisplayError("Left kernel mode ??");
+        }
+        CheckInterrupts();
+        break;
+    case 13: // Cause
+        m_CP0[Reg] &= 0xFFFFCFF;
+        if ((Value & 0x300) != 0 && HaveDebugger())
+        {
+            g_Notify->DisplayError("Set IP0 or IP1");
+        }
+        break;
+    default:
+        if (HaveDebugger())
+        {
+            g_Notify->BreakPoint(__FILE__, __LINE__);
+        }
+    }
+}
+
 void CRegisters::CheckInterrupts()
 {
     uint32_t mi_intr_reg = MI_INTR_REG, status_register;
@@ -172,7 +456,7 @@ void CRegisters::CheckInterrupts()
         FAKE_CAUSE_REGISTER &= ~CAUSE_IP2;
     }
     MI_INTR_REG = mi_intr_reg;
-    status_register = STATUS_REGISTER;
+    status_register = (uint32_t)STATUS_REGISTER;
 
     if ((status_register & STATUS_IE) == 0)
     {
@@ -201,19 +485,11 @@ void CRegisters::CheckInterrupts()
     }
 }
 
-void CRegisters::DoAddressError(bool DelaySlot, uint32_t BadVaddr, bool FromRead)
+void CRegisters::DoAddressError(bool DelaySlot, uint64_t BadVaddr, bool FromRead)
 {
-    if (HaveDebugger())
+    if (BreakOnAddressError())
     {
-        g_Notify->DisplayError(stdstr_f("AddressError %s Vaddr: %X", FromRead ? "reading" : "writing", BadVaddr).c_str());
-        if ((STATUS_REGISTER & STATUS_EXL) != 0)
-        {
-            g_Notify->DisplayError("EXL set in AddressError exception");
-        }
-        if ((STATUS_REGISTER & STATUS_ERL) != 0)
-        {
-            g_Notify->DisplayError("ERL set in AddressError exception");
-        }
+        g_Notify->BreakPoint(__FILE__, __LINE__);
     }
 
     if (FromRead)
@@ -225,14 +501,18 @@ void CRegisters::DoAddressError(bool DelaySlot, uint32_t BadVaddr, bool FromRead
         CAUSE_REGISTER = EXC_WADE;
     }
     BAD_VADDR_REGISTER = BadVaddr;
+    CONTEXT_REGISTER.BadVPN2 = BadVaddr >> 13;
+    XCONTEXT_REGISTER.BadVPN2 = BadVaddr >> 13;
+    XCONTEXT_REGISTER.R = BadVaddr >> 62;
+
     if (DelaySlot)
     {
         CAUSE_REGISTER |= CAUSE_BD;
-        EPC_REGISTER = m_PROGRAM_COUNTER - 4;
+        EPC_REGISTER = (int32_t)(m_PROGRAM_COUNTER - 4);
     }
     else
     {
-        EPC_REGISTER = m_PROGRAM_COUNTER;
+        EPC_REGISTER = (int32_t)m_PROGRAM_COUNTER;
     }
     STATUS_REGISTER |= STATUS_EXL;
     m_PROGRAM_COUNTER = 0x80000180;
@@ -374,12 +654,43 @@ bool CRegisters::DoIntrException(bool DelaySlot)
     return true;
 }
 
-void CRegisters::DoTLBReadMiss(bool DelaySlot, uint32_t BadVaddr)
+void CRegisters::DoIllegalInstructionException(bool DelaySlot)
+{
+    CAUSE_REGISTER = EXC_II;
+    if (DelaySlot)
+    {
+        CAUSE_REGISTER |= CAUSE_BD;
+        EPC_REGISTER = m_PROGRAM_COUNTER - 4;
+    }
+    else
+    {
+        EPC_REGISTER = m_PROGRAM_COUNTER;
+    }
+    m_PROGRAM_COUNTER = 0x80000180;
+    STATUS_REGISTER |= STATUS_EXL;
+}
+
+void CRegisters::DoOverflowException(bool DelaySlot)
+{
+    CAUSE_REGISTER = EXC_OV;
+    if (DelaySlot)
+    {
+        CAUSE_REGISTER |= CAUSE_BD;
+        EPC_REGISTER = m_PROGRAM_COUNTER - 4;
+    }
+    else
+    {
+        EPC_REGISTER = m_PROGRAM_COUNTER;
+    }
+    m_PROGRAM_COUNTER = 0x80000180;
+    STATUS_REGISTER |= STATUS_EXL;
+}
+
+void CRegisters::DoTLBReadMiss(bool DelaySlot, uint64_t BadVaddr)
 {
     CAUSE_REGISTER = EXC_RMISS;
     BAD_VADDR_REGISTER = BadVaddr;
-    CONTEXT_REGISTER &= 0xFF80000F;
-    CONTEXT_REGISTER |= (BadVaddr >> 9) & 0x007FFFF0;
+    CONTEXT_REGISTER.BadVPN2 = BadVaddr >> 13;
     ENTRYHI_REGISTER = (BadVaddr & 0xFFFFE000);
     if ((STATUS_REGISTER & STATUS_EXL) == 0)
     {
@@ -392,7 +703,7 @@ void CRegisters::DoTLBReadMiss(bool DelaySlot, uint32_t BadVaddr)
         {
             EPC_REGISTER = m_PROGRAM_COUNTER;
         }
-        if (g_TLB->AddressDefined(BadVaddr))
+        if (g_TLB->AddressDefined((uint32_t)BadVaddr))
         {
             m_PROGRAM_COUNTER = 0x80000180;
         }
@@ -406,18 +717,17 @@ void CRegisters::DoTLBReadMiss(bool DelaySlot, uint32_t BadVaddr)
     {
         if (HaveDebugger())
         {
-            g_Notify->DisplayError(stdstr_f("TLBMiss - EXL set\nBadVaddr = %X\nAddress defined: %s", BadVaddr, g_TLB->AddressDefined(BadVaddr) ? "true" : "false").c_str());
+            g_Notify->DisplayError(stdstr_f("TLBMiss - EXL set\nBadVaddr = %X\nAddress defined: %s", (uint32_t)BadVaddr, g_TLB->AddressDefined((uint32_t)BadVaddr) ? "true" : "false").c_str());
         }
         m_PROGRAM_COUNTER = 0x80000180;
     }
 }
 
-void CRegisters::DoTLBWriteMiss(bool DelaySlot, uint32_t BadVaddr)
+void CRegisters::DoTLBWriteMiss(bool DelaySlot, uint64_t BadVaddr)
 {
     CAUSE_REGISTER = EXC_WMISS;
     BAD_VADDR_REGISTER = BadVaddr;
-    CONTEXT_REGISTER &= 0xFF80000F;
-    CONTEXT_REGISTER |= (BadVaddr >> 9) & 0x007FFFF0;
+    CONTEXT_REGISTER.BadVPN2 = BadVaddr >> 13;
     ENTRYHI_REGISTER = (BadVaddr & 0xFFFFE000);
     if ((STATUS_REGISTER & STATUS_EXL) == 0)
     {
@@ -430,7 +740,7 @@ void CRegisters::DoTLBWriteMiss(bool DelaySlot, uint32_t BadVaddr)
         {
             EPC_REGISTER = m_PROGRAM_COUNTER;
         }
-        if (g_TLB->AddressDefined(BadVaddr))
+        if (g_TLB->AddressDefined((uint32_t)BadVaddr))
         {
             m_PROGRAM_COUNTER = 0x80000180;
         }
@@ -444,7 +754,7 @@ void CRegisters::DoTLBWriteMiss(bool DelaySlot, uint32_t BadVaddr)
     {
         if (HaveDebugger())
         {
-            g_Notify->DisplayError(stdstr_f("TLBMiss - EXL set\nBadVaddr = %X\nAddress defined: %s", BadVaddr, g_TLB->AddressDefined(BadVaddr) ? "true" : "false").c_str());
+            g_Notify->DisplayError(stdstr_f("TLBMiss - EXL set\nBadVaddr = %X\nAddress defined: %s", (uint32_t)BadVaddr, g_TLB->AddressDefined((uint32_t)BadVaddr) ? "true" : "false").c_str());
         }
         m_PROGRAM_COUNTER = 0x80000180;
     }

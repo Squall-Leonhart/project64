@@ -1,14 +1,11 @@
 #include "stdafx.h"
 #include <string.h>
 #include <Project64-core/N64System/Recompiler/CodeBlock.h>
-#include <Project64-core/N64System/Recompiler/RecompilerCodeLog.h>
 #include <Project64-core/N64System/Recompiler/x86/x86RecompilerOps.h>
 #include <Project64-core/N64System/Recompiler/Arm/ArmRecompilerOps.h>
 #include <Project64-core/N64System/SystemGlobals.h>
 #include <Project64-core/N64System/N64System.h>
-#include <Project64-core/N64System/Mips/OpcodeName.h>
-
-bool DelaySlotEffectsCompare(uint32_t PC, uint32_t Reg1, uint32_t Reg2);
+#include <Project64-core/N64System/Mips/R4300iInstruction.h>
 
 #if defined(ANDROID) && (defined(__arm__) || defined(_M_ARM))
 /* bug-fix to implement __clear_cache (missing in Android; http://code.google.com/p/android/issues/detail?id=1803) */
@@ -33,16 +30,18 @@ CCodeBlock::CCodeBlock(CMipsMemoryVM & MMU, uint32_t VAddrEnter, uint8_t * Compi
     }
 #endif
 #if defined(__i386__) || defined(_M_IX86)
-    m_RecompilerOps = new CX86RecompilerOps(MMU);
+    m_RecompilerOps = new CX86RecompilerOps(MMU, *this);
 #elif defined(__arm__) || defined(_M_ARM)
-    m_RecompilerOps = new CArmRecompilerOps(MMU);
+    m_RecompilerOps = new CArmRecompilerOps(MMU, *this);
+#else
+    g_Notify->BreakPoint(__FILE__, __LINE__);
 #endif
     if (m_RecompilerOps == nullptr)
     {
         g_Notify->BreakPoint(__FILE__, __LINE__);
         return;
     }
-    CCodeSection * baseSection = new CCodeSection(this, VAddrEnter, 0, false);
+    CCodeSection * baseSection = new CCodeSection(*this, VAddrEnter, 0, false);
     if (baseSection == nullptr)
     {
         g_Notify->BreakPoint(__FILE__, __LINE__);
@@ -55,7 +54,7 @@ CCodeBlock::CCodeBlock(CMipsMemoryVM & MMU, uint32_t VAddrEnter, uint8_t * Compi
     baseSection->m_Cont.FallThrough = true;
     baseSection->m_Cont.RegSet = baseSection->m_RegEnter;
 
-    m_EnterSection = new CCodeSection(this, VAddrEnter, 1, true);
+    m_EnterSection = new CCodeSection(*this, VAddrEnter, 1, true);
     if (m_EnterSection == nullptr)
     {
         g_Notify->BreakPoint(__FILE__, __LINE__);
@@ -91,6 +90,8 @@ CCodeBlock::~CCodeBlock()
     {
 #if defined(__i386__) || defined(_M_IX86)
         delete (CX86RecompilerOps *)m_RecompilerOps;
+#else
+        g_Notify->BreakPoint(__FILE__, __LINE__);
 #endif
         m_RecompilerOps = nullptr;
     }
@@ -129,7 +130,7 @@ bool CCodeBlock::SetSection(CCodeSection * & Section, CCodeSection * CurrentSect
 
     if (Section == nullptr)
     {
-        Section = new CCodeSection(this, TargetPC, m_Sections.size(), LinkAllowed);
+        Section = new CCodeSection(*this, TargetPC, (uint32_t)m_Sections.size(), LinkAllowed);
         if (Section == nullptr)
         {
             g_Notify->BreakPoint(__FILE__, __LINE__);
@@ -162,7 +163,7 @@ bool CCodeBlock::SetSection(CCodeSection * & Section, CCodeSection * CurrentSect
             }
             if (SplitSection->m_EndPC >= TargetPC)
             {
-                CPU_Message("%s: Split Section: %d with section: %d", __FUNCTION__, SplitSection->m_SectionID, Section->m_SectionID);
+                Log("%s: Split Section: %d with section: %d", __FUNCTION__, SplitSection->m_SectionID, Section->m_SectionID);
                 CCodeSection * BaseSection = Section;
                 BaseSection->m_EndPC = SplitSection->m_EndPC;
                 BaseSection->SetJumpAddress(SplitSection->m_Jump.JumpPC, SplitSection->m_Jump.TargetPC, SplitSection->m_Jump.PermLoop);
@@ -194,7 +195,7 @@ bool CCodeBlock::CreateBlockLinkage(CCodeSection * EnterSection)
 {
     CCodeSection * CurrentSection = EnterSection;
 
-    CPU_Message("Section %d", CurrentSection->m_SectionID);
+    Log("Section %d", CurrentSection->m_SectionID);
     for (uint32_t TestPC = EnterSection->m_EnterPC, EndPC = ((EnterSection->m_EnterPC + 0x1000) & 0xFFFFF000); TestPC <= EndPC; TestPC += 4)
     {
         if (TestPC != EndPC)
@@ -215,7 +216,7 @@ bool CCodeBlock::CreateBlockLinkage(CCodeSection * EnterSection)
                 CurrentSection->m_EndPC = TestPC - 4;
                 CurrentSection = itr->second;
 
-                CPU_Message("Section %d", CurrentSection->m_SectionID);
+                Log("Section %d", CurrentSection->m_SectionID);
                 if (EnterSection != m_EnterSection)
                 {
                     if (CurrentSection->m_JumpSection != nullptr ||
@@ -260,7 +261,7 @@ bool CCodeBlock::CreateBlockLinkage(CCodeSection * EnterSection)
 
         if (EndBlock)
         {
-            CPU_Message("%s: End Block", __FUNCTION__);
+            Log("%s: End Block", __FUNCTION__);
             CurrentSection->m_EndSection = true;
             // Find other sections that need compiling
             break;
@@ -268,7 +269,7 @@ bool CCodeBlock::CreateBlockLinkage(CCodeSection * EnterSection)
 
         if (ContinuePC != (uint32_t)-1)
         {
-            CPU_Message("%s: SetContinueAddress TestPC = %X ContinuePC = %X", __FUNCTION__, TestPC, ContinuePC);
+            Log("%s: SetContinueAddress TestPC = %X ContinuePC = %X", __FUNCTION__, TestPC, ContinuePC);
             CurrentSection->SetContinueAddress(TestPC, ContinuePC);
             if (!SetSection(CurrentSection->m_ContinueSection, CurrentSection, ContinuePC, true, TestPC))
             {
@@ -278,7 +279,7 @@ bool CCodeBlock::CreateBlockLinkage(CCodeSection * EnterSection)
 
         if (LikelyBranch)
         {
-            CPU_Message("%s: SetJumpAddress TestPC = %X Target = %X", __FUNCTION__, TestPC, TestPC + 4);
+            Log("%s: SetJumpAddress TestPC = %X Target = %X", __FUNCTION__, TestPC, TestPC + 4);
             CurrentSection->SetJumpAddress(TestPC, TestPC + 4, false);
             if (SetSection(CurrentSection->m_JumpSection, CurrentSection, TestPC + 4, false, TestPC))
             {
@@ -301,7 +302,7 @@ bool CCodeBlock::CreateBlockLinkage(CCodeSection * EnterSection)
                 JumpSection->m_EndPC = TestPC + 4;
                 if (BranchEndBlock)
                 {
-                    CPU_Message("%s: Jump End Block", __FUNCTION__);
+                    Log("%s: Jump End Block", __FUNCTION__);
                     JumpSection->m_EndSection = true;
                     TargetPC = (uint32_t)-1;
                 }
@@ -319,7 +320,7 @@ bool CCodeBlock::CreateBlockLinkage(CCodeSection * EnterSection)
         }
         else if (TargetPC != ((uint32_t)-1))
         {
-            CPU_Message("%s: SetJumpAddress TestPC = %X Target = %X", __FUNCTION__, TestPC, TargetPC);
+            Log("%s: SetJumpAddress TestPC = %X Target = %X", __FUNCTION__, TestPC, TargetPC);
             CurrentSection->SetJumpAddress(TestPC, TargetPC, PermLoop);
             if (PermLoop || !SetSection(CurrentSection->m_JumpSection, CurrentSection, TargetPC, true, TestPC))
             {
@@ -361,7 +362,7 @@ bool CCodeBlock::CreateBlockLinkage(CCodeSection * EnterSection)
             break;
         }
         TestPC = CurrentSection->m_EnterPC;
-        CPU_Message("a. Section %d", CurrentSection->m_SectionID);
+        Log("a. Section %d", CurrentSection->m_SectionID);
         TestPC -= 4;
     }
 
@@ -434,16 +435,16 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
     EndBlock = false;
     PermLoop = false;
 
-    OPCODE Command;
-    if (!g_MMU->MemoryValue32(PC, Command.Hex))
+    R4300iOpcode Command;
+    if (!g_MMU->MemoryValue32(PC, Command.Value))
     {
         g_Notify->BreakPoint(__FILE__, __LINE__);
         return false;
     }
 
 #ifdef _DEBUG
-    const char * Name = R4300iOpcodeName(Command.Hex, PC);
-    CPU_Message("  0x%08X %s", PC, Name);
+    R4300iInstruction Instruction(PC, Command.Value);
+    Log("  0x%08X %s %s", PC, Instruction.Name(), Instruction.Param());
 #endif
     switch (Command.op)
     {
@@ -493,7 +494,13 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
             }
             else
             {
-                if (TargetPC == PC && !DelaySlotEffectsCompare(PC, Command.rs, 0))
+                R4300iOpcode DelaySlot;
+                if (!g_MMU->MemoryValue32(PC + 4, DelaySlot.Value))
+                {
+                    g_Notify->FatalError(GS(MSG_FAIL_LOAD_WORD));
+                }
+
+                if (TargetPC == PC && !R4300iInstruction(PC, Command.Value).DelaySlotEffectsCompare(DelaySlot.Value))
                 {
                     PermLoop = true;
                 }
@@ -519,7 +526,12 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
                     }
                     else
                     {
-                        if (!DelaySlotEffectsCompare(PC, Command.rs, Command.rt))
+                        R4300iOpcode DelaySlot;
+                        if (!g_MMU->MemoryValue32(PC + 4, DelaySlot.Value))
+                        {
+                            g_Notify->FatalError(GS(MSG_FAIL_LOAD_WORD));
+                        }
+                        if (!R4300iInstruction(PC, Command.Value).DelaySlotEffectsCompare(DelaySlot.Value))
                         {
                             PermLoop = true;
                         }
@@ -537,7 +549,12 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
             TargetPC = PC + ((int16_t)Command.offset << 2) + 4;
             if (TargetPC == PC)
             {
-                if (!DelaySlotEffectsCompare(PC, Command.rs, 0))
+                R4300iOpcode DelaySlot;
+                if (!g_MMU->MemoryValue32(PC + 4, DelaySlot.Value))
+                {
+                    g_Notify->FatalError(GS(MSG_FAIL_LOAD_WORD));
+                }
+                if (!R4300iInstruction(PC, Command.Value).DelaySlotEffectsCompare(DelaySlot.Value))
                 {
                     PermLoop = true;
                 }
@@ -550,7 +567,7 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
         case R4300i_REGIMM_TGEIU:   case R4300i_REGIMM_TLTI:    case R4300i_REGIMM_TLTIU:
             break;
         default:
-            if (Command.Hex == 0x0407000D)
+            if (Command.Value == 0x0407000D)
             {
                 EndBlock = true;
                 break;
@@ -583,8 +600,10 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
             {
                 ContinuePC = PC + 8;
             }
-
-            if (TargetPC == PC && !DelaySlotEffectsCompare(PC, Command.rs, Command.rt))
+            R4300iOpcode DelaySlot;
+            if (TargetPC == PC && 
+                g_MMU->MemoryValue32(PC + 4, DelaySlot.Value) && 
+                !R4300iInstruction(PC, Command.Value).DelaySlotEffectsCompare(DelaySlot.Value))
             {
                 PermLoop = true;
             }
@@ -603,7 +622,12 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
         {
             if (TargetPC == PC)
             {
-                if (!DelaySlotEffectsCompare(PC, Command.rs, Command.rt))
+                R4300iOpcode DelaySlot;
+                if (!g_MMU->MemoryValue32(PC + 4, DelaySlot.Value))
+                {
+                    g_Notify->FatalError(GS(MSG_FAIL_LOAD_WORD));
+                }
+                if (!R4300iInstruction(PC, Command.Value).DelaySlotEffectsCompare(DelaySlot.Value))
                 {
                     PermLoop = true;
                 }
@@ -701,7 +725,12 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
         TargetPC = PC + ((int16_t)Command.offset << 2) + 4;
         if (TargetPC == PC)
         {
-            if (!DelaySlotEffectsCompare(PC, Command.rs, Command.rt))
+            R4300iOpcode DelaySlot;
+            if (!g_MMU->MemoryValue32(PC + 4, DelaySlot.Value))
+            {
+                g_Notify->FatalError(GS(MSG_FAIL_LOAD_WORD));
+            }
+            if (!R4300iInstruction(PC, Command.Value).DelaySlotEffectsCompare(DelaySlot.Value))
             {
                 PermLoop = true;
             }
@@ -720,7 +749,12 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
         ContinuePC = PC + 8;
         if (TargetPC == PC)
         {
-            if (!DelaySlotEffectsCompare(PC, Command.rs, Command.rt))
+            R4300iOpcode DelaySlot;
+            if (!g_MMU->MemoryValue32(PC + 4, DelaySlot.Value))
+            {
+                g_Notify->FatalError(GS(MSG_FAIL_LOAD_WORD));
+            }
+            if (!R4300iInstruction(PC, Command.Value).DelaySlotEffectsCompare(DelaySlot.Value))
             {
                 PermLoop = true;
             }
@@ -729,8 +763,8 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
         IncludeDelaySlot = true;
         break;
     default:
-        if (Command.Hex == 0x7C1C97C0 ||
-            Command.Hex == 0xF1F3F5F7)
+        if (Command.Value == 0x7C1C97C0 ||
+            Command.Value == 0xF1F3F5F7)
         {
             EndBlock = true;
             break;
@@ -743,11 +777,11 @@ bool CCodeBlock::AnalyzeInstruction(uint32_t PC, uint32_t & TargetPC, uint32_t &
 
 bool CCodeBlock::Compile()
 {
-    CPU_Message("====== Code block ======");
-    CPU_Message("Native entry point: %X", CompiledLocation());
-    CPU_Message("Start of block: %X", VAddrEnter());
-    CPU_Message("Number of sections: %d", NoOfSections());
-    CPU_Message("====== Recompiled code ======");
+    Log("====== Code block ======");
+    Log("Native entry point: %X", CompiledLocation());
+    Log("Start of block: %X", VAddrEnter());
+    Log("Number of sections: %d", NoOfSections());
+    Log("====== Recompiled code ======");
 
     m_RecompilerOps->EnterCodeBlock();
     if (g_System->bLinkBlocks())
@@ -783,4 +817,28 @@ uint32_t CCodeBlock::NextTest()
     uint32_t next_test = m_Test;
     m_Test += 1;
     return next_test;
+}
+
+void CCodeBlock::Log(_Printf_format_string_ const char * Text, ...)
+{
+    if (!CDebugSettings::bRecordRecompilerAsm())
+    {
+        return;
+    }
+
+    va_list args;
+    va_start(args, Text);
+#pragma warning(push)
+#pragma warning(disable : 4996)
+    size_t nlen = _vscprintf(Text, args) + 1;
+    char * buffer = (char*)alloca(nlen * sizeof(char));
+    buffer[nlen - 1] = 0;
+    if (buffer != nullptr)
+    {
+        vsprintf(buffer, Text, args);
+        m_CodeLog += buffer;
+        m_CodeLog += "\n";
+    }
+#pragma warning(pop)
+    va_end(args);
 }

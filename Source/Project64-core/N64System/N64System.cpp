@@ -1,12 +1,11 @@
 #include "stdafx.h"
 #include "N64System.h"
 #include <Project64-core/3rdParty/zip.h>
-#include <Project64-core/N64System/Recompiler/RecompilerCodeLog.h>
 #include <Project64-core/N64System/SystemGlobals.h>
 #include <Project64-core/N64System/Mips/Mempak.h>
 #include <Project64-core/N64System/Mips/Transferpak.h>
 #include <Project64-core/N64System/Interpreter/InterpreterCPU.h>
-#include <Project64-core/N64System/Mips/OpcodeName.h>
+#include <Project64-core/N64System/Mips/R4300iInstruction.h>
 #include <Project64-core/N64System/Mips/Disk.h>
 #include <Project64-core/N64System/N64Disk.h>
 #include <Project64-core/N64System/Enhancement/Enhancements.h>
@@ -37,10 +36,9 @@ CN64System::CN64System(CPlugins * Plugins, uint32_t randomizer_seed, bool SavesR
     m_Recomp(nullptr),
     m_InReset(false),
     m_NextTimer(0),
-    m_SystemTimer(m_Reg, m_MMU_VM.AudioInterface(), m_NextTimer),
+    m_SystemTimer(*this),
     m_bCleanFrameBox(true),
     m_RspBroke(true),
-    m_DMAUsed(false),
     m_TestTimer(false),
     m_PipelineStage(PIPELINE_STAGE_NORMAL),
     m_JumpToLocation(0),
@@ -913,7 +911,6 @@ void CN64System::Reset(bool bInitReg, bool ClearMenory)
     m_AlistCount = 0;
     m_DlistCount = 0;
     m_UnknownCount = 0;
-    m_DMAUsed = false;
     m_RspBroke = true;
     m_SyncCount = 0;
 
@@ -938,7 +935,7 @@ void CN64System::Reset(bool bInitReg, bool ClearMenory)
     }
 
     m_SystemTimer.Reset();
-    m_SystemTimer.SetTimer(CSystemTimer::CompareTimer, m_Reg.COMPARE_REGISTER - m_Reg.COUNT_REGISTER, false);
+    m_SystemTimer.SetTimer(CSystemTimer::CompareTimer, (uint32_t)m_Reg.COMPARE_REGISTER - (uint32_t)m_Reg.COUNT_REGISTER, false);
 
     if (m_Recomp)
     {
@@ -1031,11 +1028,12 @@ void CN64System::InitRegisters(bool bPostPif, CMipsMemoryVM & MMU)
     m_Reg.MI_VERSION_REG = 0x02020102;
     m_Reg.SP_STATUS_REG = 0x00000001;
     m_Reg.CAUSE_REGISTER = 0x0000005C;
-    m_Reg.CONTEXT_REGISTER = 0x007FFFF0;
-    m_Reg.EPC_REGISTER = 0xFFFFFFFF;
-    m_Reg.BAD_VADDR_REGISTER = 0xFFFFFFFF;
-    m_Reg.ERROREPC_REGISTER = 0xFFFFFFFF;
-    m_Reg.CONFIG_REGISTER = 0x0006E463;
+    m_Reg.CONTEXT_REGISTER.Value = 0x007FFFF0;
+    m_Reg.EPC_REGISTER = 0xFFFFFFFFFFFFFFFF;
+    m_Reg.BAD_VADDR_REGISTER = 0xFFFFFFFFFFFFFFFF;
+    m_Reg.ERROREPC_REGISTER = 0xFFFFFFFFFFFFFFFF;
+    m_Reg.PREVID_REGISTER = 0x00000B22;
+    m_Reg.CONFIG_REGISTER = 0x7006E463;
     m_Reg.STATUS_REGISTER = 0x34000000;
 
     // N64DD registers
@@ -1239,7 +1237,6 @@ void CN64System::ExecuteCPU()
     g_Notify->DisplayMessage(2, MSG_EMULATION_STARTED);
 
     m_EndEmulation = false;
-    NotifyCallback(CN64SystemCB_LoadedGameState);
 
     m_Plugins->RomOpened();
     if (m_SyncCPU)
@@ -1251,7 +1248,7 @@ void CN64System::ExecuteCPU()
     {
         g_Debugger->EmulationStarted();
     }
-#ifdef _WIN32
+#if defined(_WIN32) && (defined(__i386__) || defined(_M_IX86))
     _controlfp(_PC_53, _MCW_PC);
 #endif
 
@@ -1448,7 +1445,7 @@ void CN64System::SyncCPU(CN64System * const SecondCPU)
 
     if (bFastSP() && m_Recomp)
     {
-#if defined(__aarch64__) || defined(__amd64__)
+#if defined(__aarch64__) || defined(__amd64__) || defined(_M_X64)
         g_Notify->BreakPoint(__FILE__,__LINE__);
 #else
         if (m_Recomp->MemoryStackPos() != (uint32_t)(m_MMU_VM.Rdram() + (m_Reg.m_GPR[29].W[0] & 0x1FFFFFFF)))
@@ -1618,7 +1615,7 @@ void CN64System::DumpSyncErrors(CN64System * SecondCPU)
         }
         if (bFastSP() && m_Recomp)
         {
-#if defined(__aarch64__) || defined(__amd64__)
+#if defined(__aarch64__) || defined(__amd64__) || defined(_M_X64)
             g_Notify->BreakPoint(__FILE__,__LINE__);
 #else
             if (m_Recomp->MemoryStackPos() != (uint32_t)(m_MMU_VM.Rdram() + (m_Reg.m_GPR[29].W[0] & 0x1FFFFFFF)))
@@ -1738,7 +1735,7 @@ void CN64System::DumpSyncErrors(CN64System * SecondCPU)
             uint32_t OpcodeValue, Addr = m_Reg.m_PROGRAM_COUNTER + (count << 2);
             if (g_MMU->MemoryValue32(Addr, OpcodeValue))
             {
-                Error.LogF("%X: %s\r\n", Addr, R4300iOpcodeName(OpcodeValue, Addr));
+                Error.LogF("%X: %s\r\n", Addr, R4300iInstruction(Addr, OpcodeValue).NameAndParam().c_str());
             }
         }
         Error.Log("\r\n");
@@ -1748,7 +1745,7 @@ void CN64System::DumpSyncErrors(CN64System * SecondCPU)
             uint32_t OpcodeValue, Addr = m_LastSuccessSyncPC[0] + (count << 2);
             if (g_MMU->MemoryValue32(Addr, OpcodeValue))
             {
-                Error.LogF("%X: %s\r\n", Addr, R4300iOpcodeName(OpcodeValue, Addr));
+                Error.LogF("%X: %s\r\n", Addr, R4300iInstruction(Addr, OpcodeValue).NameAndParam().c_str());
             }
         }
     }
@@ -2268,7 +2265,7 @@ bool CN64System::LoadState(const char * FileName)
         m_Reg.RANDOM_REGISTER += 32 - m_Reg.WIRED_REGISTER;
     }
     // Fix up timer
-    m_SystemTimer.SetTimer(CSystemTimer::CompareTimer, m_Reg.COMPARE_REGISTER - m_Reg.COUNT_REGISTER, false);
+    m_SystemTimer.SetTimer(CSystemTimer::CompareTimer, (uint32_t)m_Reg.COMPARE_REGISTER - (uint32_t)m_Reg.COUNT_REGISTER, false);
     m_SystemTimer.SetTimer(CSystemTimer::ViTimer, NextVITimer, false);
     m_Reg.FixFpuLocations();
     m_TLB.Reset(false);
@@ -2278,10 +2275,9 @@ bool CN64System::LoadState(const char * FileName)
     }
     m_CPU_Usage.ResetTimers();
     m_FPS.Reset(true);
-    if (bRecordRecompilerAsm())
+    if (bRecordRecompilerAsm() && m_Recomp)
     {
-        Stop_Recompiler_Log();
-        Start_Recompiler_Log();
+        m_Recomp->ResetLog();
     }
 
 #ifdef TEST_SP_TRACKING

@@ -15,7 +15,6 @@ public:
     static inline bool WaitingForStep(void) { return m_WaitingForStep; }
     static inline bool bRecordRecompilerAsm(void) { return m_bRecordRecompilerAsm; }
     static inline bool bShowTLBMisses(void) { return m_bShowTLBMisses; }
-    static inline bool bShowDivByZero(void) { return m_bShowDivByZero; }
     static inline bool bRecordExecutionTimes(void) { return m_RecordExecutionTimes; }
     static inline bool HaveExecutionBP(void) { return m_HaveExecutionBP; }
     static inline bool HaveWriteBP(void) { return m_HaveWriteBP; }
@@ -26,7 +25,10 @@ public:
     static inline uint32_t FpExceptionBreakpoints(void) { return m_FpExceptionBreakpoints; }
     static inline uint32_t IntrBreakpoints(void) { return m_IntrBreakpoints; }
     static inline uint32_t RcpIntrBreakpoints(void) { return m_RcpIntrBreakpoints; }
-    static inline bool ShowUnhandledMemory(void) { return m_ShowUnhandledMemory; }
+    static inline bool EndOnPermLoop(void) { return m_EndOnPermLoop; }
+    static inline bool BreakOnUnhandledMemory(void) { return m_BreakOnUnhandledMemory; }
+    static inline bool BreakOnAddressError(void) { return m_BreakOnAddressError; }
+    static inline bool StepOnBreakOpCode(void) { return m_StepOnBreakOpCode; }
 
 private:
     static void StaticRefreshSettings(CDebugSettings * _this)
@@ -43,7 +45,6 @@ private:
     static bool m_WaitingForStep;
     static bool m_bRecordRecompilerAsm;
     static bool m_bShowTLBMisses;
-    static bool m_bShowDivByZero;
     static bool m_RecordExecutionTimes;
     static bool m_HaveExecutionBP;
     static bool m_HaveWriteBP;
@@ -54,7 +55,10 @@ private:
     static uint32_t m_FpExceptionBreakpoints;
     static uint32_t m_IntrBreakpoints;
     static uint32_t m_RcpIntrBreakpoints;
-    static bool m_ShowUnhandledMemory;
+    static bool m_EndOnPermLoop;
+    static bool m_BreakOnUnhandledMemory;
+    static bool m_BreakOnAddressError;
+    static bool m_StepOnBreakOpCode;
 
     static int32_t m_RefCount;
     static bool m_Registered;

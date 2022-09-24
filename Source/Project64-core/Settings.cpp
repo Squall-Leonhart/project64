@@ -319,8 +319,10 @@ void CSettings::AddHowToHandleSetting(const char * BaseDirectory)
     AddHandler(File_DiskIPLTOOLPath, new CSettingTypeApplicationPath("Settings", "Disk IPL TOOL ROM Path", Default_None));
 
     AddHandler(Debugger_Enabled, new CSettingTypeApplication("Debugger", "Debugger", false));
-    AddHandler(Debugger_ShowTLBMisses, new CSettingTypeApplication("Debugger", "Show TLB Misses", false));
-    AddHandler(Debugger_ShowUnhandledMemory, new CSettingTypeApplication("Debugger", "Show Unhandled Memory", false));
+    AddHandler(Debugger_EndOnPermLoop, new CSettingTypeApplication("Debugger", "End On Perm Loop", false));
+    AddHandler(Debugger_BreakOnUnhandledMemory, new CSettingTypeApplication("Debugger", "Break On Unhandled Memory", false));
+    AddHandler(Debugger_BreakOnAddressError, new CSettingTypeApplication("Debugger", "Break On Address Error", false));
+    AddHandler(Debugger_StepOnBreakOpCode, new CSettingTypeApplication("Debugger", "Step On Break OpCode", false));
     AddHandler(Debugger_ShowPifErrors, new CSettingTypeApplication("Debugger", "Show Pif Errors", false));
     AddHandler(Debugger_DisableGameFixes, new CSettingTypeApplication("Debugger", "Disable Game Fixes", false));
     AddHandler(Debugger_ShowDListAListCount, new CSettingTypeApplication("Debugger", "Show Dlist Alist Count", false));
@@ -340,7 +342,6 @@ void CSettings::AddHowToHandleSetting(const char * BaseDirectory)
     AddHandler(Debugger_IntrBreakpoints, new CSettingTypeApplication("Debugger", "Interrupt Breakpoints", (uint32_t)0));
     AddHandler(Debugger_RcpIntrBreakpoints, new CSettingTypeApplication("Debugger", "RCP Interrupt Breakpoints", (uint32_t)0));
     AddHandler(Debugger_DebugLanguage, new CSettingTypeApplication("Debugger", "Debug Language", false));
-    AddHandler(Debugger_ShowDivByZero, new CSettingTypeApplication("Debugger", "Show Div by zero", false));
     AddHandler(Debugger_AppLogFlush, new CSettingTypeApplication("Logging", "Log Auto Flush", (uint32_t)false));
     AddHandler(Debugger_RecordRecompilerAsm, new CSettingTypeApplication("Debugger", "Record Recompiler Asm", false));
     AddHandler(Debugger_AutorunScripts, new CSettingTypeApplication("Debugger", "Autorun Scripts", ""));
@@ -385,7 +386,7 @@ void CSettings::AddHowToHandleSetting(const char * BaseDirectory)
 #endif
 #else
     AddHandler(Plugin_RSP_Current, new CSettingTypeApplication("Plugin", "RSP Dll", "libProject64-rsp-hle.so"));
-    AddHandler(Plugin_GFX_Current, new CSettingTypeApplication("Plugin", "Graphics Dll", "libProject64-gfx.so"));
+    AddHandler(Plugin_GFX_Current, new CSettingTypeApplication("Plugin", "Graphics Dll", "libProject64-video.so"));
     AddHandler(Plugin_AUDIO_Current, new CSettingTypeApplication("Plugin", "Audio Dll", "libProject64-audio-android.so"));
     AddHandler(Plugin_CONT_Current, new CSettingTypeApplication("Plugin", "Controller Dll", "libProject64-input-android.so"));
 #endif
@@ -837,10 +838,10 @@ bool CSettings::LoadStringVal(SettingID Type, char * Buffer, uint32_t BufferSize
     {
         stdstr Value;
         bRes = FindInfo->second->Load(0, Value);
-        int len = BufferSize;
+        uint32_t len = BufferSize;
         if ((Value.length() + 1) < (size_t)len)
         {
-            len = Value.length() + 1;
+            len = (uint32_t)(Value.length() + 1);
         }
         strncpy(Buffer, Value.c_str(), len);
     }

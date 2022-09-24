@@ -4,8 +4,6 @@
 #include <Project64-core\N64System\SystemGlobals.h>
 #include <Project64-core\N64System\N64Rom.h>
 #include <Project64-core\N64System\N64System.h>
-#include <Project64-core\N64System\Recompiler\RecompilerCodeLog.h>
-#include <Project64-core\N64System\Mips\OpcodeName.h>
 #include <Project64-core\N64System\Mips\Disk.h>
 #include <Project64-core\Debugger.h>
 #include <Project64-core\ExceptionHandler.h>
@@ -23,11 +21,12 @@ CMipsMemoryVM::CMipsMemoryVM(CN64System & System, bool SavesReadOnly) :
     m_System(System),
     m_Reg(System.m_Reg),
     m_AudioInterfaceHandler(System, System.m_Reg),
-    m_CartridgeDomain1Address1Handler(g_DDRom),
+    m_CartridgeDomain1Address1Handler(System.m_Reg, g_DDRom),
     m_CartridgeDomain2Address1Handler(System.m_Reg),
     m_CartridgeDomain2Address2Handler(System, System.m_Reg, *this, SavesReadOnly),
     m_RDRAMRegistersHandler(System.m_Reg),
     m_DPCommandRegistersHandler(System, System.GetPlugins(), System.m_Reg),
+    m_ISViewerHandler(System),
     m_MIPSInterfaceHandler(System.m_Reg),
     m_PeripheralInterfaceHandler(System, *this, System.m_Reg, m_CartridgeDomain2Address2Handler),
     m_PifRamHandler(*this, System.m_Reg),
@@ -117,7 +116,11 @@ void CMipsMemoryVM::Reset(bool /*EraseMemory*/)
 
 void CMipsMemoryVM::ReserveMemory()
 {
+#if defined(__i386__) || defined(_M_IX86)
     m_Reserve1 = (uint8_t *)AllocateAddressSpace(0x20000000, (void *)g_Settings->LoadDword(Setting_FixedRdramAddress));
+#else
+    m_Reserve1 = (uint8_t *)AllocateAddressSpace(0x20000000);
+#endif
     m_Reserve2 = (uint8_t *)AllocateAddressSpace(0x04002000);
 }
 
@@ -336,7 +339,8 @@ bool CMipsMemoryVM::MemoryValue64(uint32_t VAddr, uint64_t & Value)
     {
         return false;
     }
-    Value = *(uint64_t*)(ptr);
+    *((uint32_t*)(&Value) + 1) = *(uint32_t*)(ptr);
+    *((uint32_t*)(&Value) + 0) = *(uint32_t*)(ptr + 4);
     return true;
 }
 
@@ -373,202 +377,218 @@ bool CMipsMemoryVM::UpdateMemoryValue32(uint32_t VAddr, uint32_t Value)
     return true;
 }
 
-bool CMipsMemoryVM::LB_Memory(uint32_t VAddr, uint8_t& Value)
+bool CMipsMemoryVM::LB_Memory(uint64_t VAddr, uint8_t& Value)
 {
-    if (HaveReadBP() && g_Debugger->ReadBP8(VAddr) && MemoryBreakpoint())
+    uint32_t VAddr32 = (uint32_t)VAddr;
+
+    if (HaveReadBP() && g_Debugger->ReadBP8(VAddr32) && MemoryBreakpoint())
     {
         return false;
     }
-    uint8_t * MemoryPtr = (uint8_t*)m_MemoryReadMap[VAddr >> 12];
+    uint8_t * MemoryPtr = (uint8_t*)m_MemoryReadMap[VAddr32 >> 12];
     if (MemoryPtr != (uint8_t*)-1)
     {
-        Value = *(uint8_t*)(MemoryPtr + (VAddr ^ 3));
+        Value = *(uint8_t*)(MemoryPtr + (VAddr32 ^ 3));
         return true;
     }
-    uint32_t BaseAddress = m_TLB_ReadMap[VAddr >> 12];
+    uint32_t BaseAddress = m_TLB_ReadMap[VAddr32 >> 12];
     if (BaseAddress == -1)
     {
         GenerateTLBReadException(VAddr, __FUNCTION__);
         return false;
     }
-    return LB_NonMemory(VAddr, Value);
+    return LB_NonMemory(VAddr32, Value);
 }
 
-bool CMipsMemoryVM::LH_Memory(uint32_t VAddr, uint16_t & Value)
+bool CMipsMemoryVM::LH_Memory(uint64_t VAddr, uint16_t & Value)
 {
-    if ((VAddr & 1) != 0)
+    uint32_t VAddr32 = (uint32_t)VAddr;
+
+    if ((VAddr32 & 1) != 0)
     {
         GenerateAddressErrorException(VAddr, true);
         return false;
     }
-    if (HaveReadBP() && g_Debugger->ReadBP16(VAddr) && MemoryBreakpoint())
+    if (HaveReadBP() && g_Debugger->ReadBP16(VAddr32) && MemoryBreakpoint())
     {
         return false;
     }
-    uint8_t * MemoryPtr = (uint8_t*)m_MemoryReadMap[VAddr >> 12];
+    uint8_t * MemoryPtr = (uint8_t*)m_MemoryReadMap[VAddr32 >> 12];
     if (MemoryPtr != (uint8_t*)-1)
     {
-        Value = *(uint16_t*)(MemoryPtr + (VAddr ^ 2));
+        Value = *(uint16_t*)(MemoryPtr + (VAddr32 ^ 2));
         return true;
     }
-    uint32_t BaseAddress = m_TLB_ReadMap[VAddr >> 12];
+    uint32_t BaseAddress = m_TLB_ReadMap[VAddr32 >> 12];
     if (BaseAddress == -1)
     {
         GenerateTLBReadException(VAddr, __FUNCTION__);
         return false;
     }
-    return LH_NonMemory(VAddr, Value);
+    return LH_NonMemory(VAddr32, Value);
 }
 
-bool CMipsMemoryVM::LW_Memory(uint32_t VAddr, uint32_t & Value)
+bool CMipsMemoryVM::LW_Memory(uint64_t VAddr, uint32_t & Value)
 {
-    if ((VAddr & 3) != 0)
+    uint32_t VAddr32 = (uint32_t)VAddr;
+
+    if ((VAddr32 & 3) != 0)
     {
         GenerateAddressErrorException(VAddr, true);
         return false;
     }
-    if (HaveReadBP() && g_Debugger->ReadBP32(VAddr) && MemoryBreakpoint())
+    if (HaveReadBP() && g_Debugger->ReadBP32(VAddr32) && MemoryBreakpoint())
     {
         return false;
     }
-    uint8_t * MemoryPtr = (uint8_t*)m_MemoryReadMap[VAddr >> 12];
+    uint8_t * MemoryPtr = (uint8_t*)m_MemoryReadMap[VAddr32 >> 12];
     if (MemoryPtr != (uint8_t *)-1)
     {
-        Value = *(uint32_t*)(MemoryPtr + VAddr);
+        Value = *(uint32_t*)(MemoryPtr + VAddr32);
         return true;
     }
-    uint32_t BaseAddress = m_TLB_ReadMap[VAddr >> 12];
+    uint32_t BaseAddress = m_TLB_ReadMap[VAddr32 >> 12];
     if (BaseAddress == -1)
     {
         GenerateTLBReadException(VAddr, __FUNCTION__);
         return false;
     }
-    return LW_NonMemory(VAddr, Value);
+    return LW_NonMemory(VAddr32, Value);
 }
 
-bool CMipsMemoryVM::LD_Memory(uint32_t VAddr, uint64_t& Value)
+bool CMipsMemoryVM::LD_Memory(uint64_t VAddr, uint64_t& Value)
 {
-    if ((VAddr & 7) != 0)
+    uint32_t VAddr32 = (uint32_t)VAddr;
+
+    if ((VAddr32 & 7) != 0)
     {
         GenerateAddressErrorException(VAddr, true);
         return false;
     }
-    if (HaveReadBP() && g_Debugger->ReadBP64(VAddr) && MemoryBreakpoint())
+    if (HaveReadBP() && g_Debugger->ReadBP64(VAddr32) && MemoryBreakpoint())
     {
         return false;
     }
-    uint8_t * MemoryPtr = (uint8_t*)m_MemoryReadMap[VAddr >> 12];
+    uint8_t * MemoryPtr = (uint8_t*)m_MemoryReadMap[VAddr32 >> 12];
     if (MemoryPtr != (uint8_t *)-1)
     {
-        *((uint32_t*)(&Value) + 1) = *(uint32_t*)(MemoryPtr + VAddr);
-        *((uint32_t*)(&Value) + 0) = *(uint32_t*)(MemoryPtr + VAddr + 4);
+        *((uint32_t*)(&Value) + 1) = *(uint32_t*)(MemoryPtr + VAddr32);
+        *((uint32_t*)(&Value) + 0) = *(uint32_t*)(MemoryPtr + VAddr32 + 4);
         return true;
     }
-    uint32_t BaseAddress = m_TLB_ReadMap[VAddr >> 12];
+    uint32_t BaseAddress = m_TLB_ReadMap[VAddr32 >> 12];
     if (BaseAddress == -1)
     {
         return false;
     }
-    return LD_NonMemory(VAddr, Value);
+    return LD_NonMemory(VAddr32, Value);
 }
 
-bool CMipsMemoryVM::SB_Memory(uint32_t VAddr, uint8_t Value)
+bool CMipsMemoryVM::SB_Memory(uint64_t VAddr, uint32_t Value)
 {
-    if (HaveWriteBP() && g_Debugger->WriteBP8(VAddr) && MemoryBreakpoint())
+    uint32_t VAddr32 = (uint32_t)VAddr;
+
+    if (HaveWriteBP() && g_Debugger->WriteBP8(VAddr32) && MemoryBreakpoint())
     {
         return false;
     }
-    uint8_t * MemoryPtr = (uint8_t*)m_MemoryWriteMap[VAddr >> 12];
+    uint8_t * MemoryPtr = (uint8_t*)m_MemoryWriteMap[VAddr32 >> 12];
     if (MemoryPtr != (uint8_t *)-1)
     {
-        *(uint8_t*)(MemoryPtr + (VAddr ^ 3)) = Value;
+        *(uint8_t*)(MemoryPtr + (VAddr32 ^ 3)) = (uint8_t)Value;
         return true;
     }
-    if (m_TLB_WriteMap[VAddr >> 12] == -1)
+    if (m_TLB_WriteMap[VAddr32 >> 12] == -1)
     {
         GenerateTLBWriteException(VAddr, __FUNCTION__);
         return false;
     }
-    return SB_NonMemory(VAddr, Value);
+    return SB_NonMemory(VAddr32, Value);
 }
 
-bool CMipsMemoryVM::SH_Memory(uint32_t VAddr, uint16_t Value)
+bool CMipsMemoryVM::SH_Memory(uint64_t VAddr, uint32_t Value)
 {
-    if ((VAddr & 1) != 0)
+    uint32_t VAddr32 = (uint32_t)VAddr;
+
+    if ((VAddr32 & 1) != 0)
     {
         GenerateAddressErrorException(VAddr, false);
         return false;
     }
-    if (HaveWriteBP() && g_Debugger->WriteBP16(VAddr) && MemoryBreakpoint())
+    if (HaveWriteBP() && g_Debugger->WriteBP16(VAddr32) && MemoryBreakpoint())
     {
         return false;
     }
-    uint8_t * MemoryPtr = (uint8_t*)m_MemoryWriteMap[VAddr >> 12];
+    uint8_t * MemoryPtr = (uint8_t*)m_MemoryWriteMap[VAddr32 >> 12];
     if (MemoryPtr != (uint8_t *)-1)
     {
-        *(uint16_t*)(MemoryPtr + (VAddr ^ 2)) = Value;
+        *(uint16_t*)(MemoryPtr + (VAddr32 ^ 2)) = (uint16_t)Value;
         return true;
     }
-    uint32_t BaseAddress = m_TLB_ReadMap[VAddr >> 12];
+    uint32_t BaseAddress = m_TLB_ReadMap[VAddr32 >> 12];
     if (BaseAddress == -1)
     {
         GenerateTLBWriteException(VAddr, __FUNCTION__);
         return false;
     }
-    return SH_NonMemory(VAddr, Value);
+    return SH_NonMemory(VAddr32, Value);
 }
 
-bool CMipsMemoryVM::SW_Memory(uint32_t VAddr, uint32_t Value)
+bool CMipsMemoryVM::SW_Memory(uint64_t VAddr, uint32_t Value)
 {
-    if ((VAddr & 3) != 0)
+    uint32_t VAddr32 = (uint32_t)VAddr;
+
+    if ((VAddr32 & 3) != 0)
     {
         GenerateAddressErrorException(VAddr, false);
         return false;
     }
-    if (HaveWriteBP() && g_Debugger->WriteBP32(VAddr) && MemoryBreakpoint())
+    if (HaveWriteBP() && g_Debugger->WriteBP32(VAddr32) && MemoryBreakpoint())
     {
         return false;
     }
-    uint8_t * MemoryPtr = (uint8_t*)m_MemoryWriteMap[VAddr >> 12];
+    uint8_t * MemoryPtr = (uint8_t*)m_MemoryWriteMap[VAddr32 >> 12];
     if (MemoryPtr != (uint8_t *)-1)
     {
-        *(uint32_t*)(MemoryPtr + VAddr) = Value;
+        *(uint32_t*)(MemoryPtr + VAddr32) = Value;
         return true;
     }
-    uint32_t BaseAddress = m_TLB_ReadMap[VAddr >> 12];
+    uint32_t BaseAddress = m_TLB_ReadMap[VAddr32 >> 12];
     if (BaseAddress == -1)
     {
         GenerateTLBWriteException(VAddr, __FUNCTION__);
         return false;
     }
-    return SW_NonMemory(VAddr, Value);
+    return SW_NonMemory(VAddr32, Value);
 }
 
-bool CMipsMemoryVM::SD_Memory(uint32_t VAddr, uint64_t Value)
+bool CMipsMemoryVM::SD_Memory(uint64_t VAddr, uint64_t Value)
 {
+    uint32_t VAddr32 = (uint32_t)VAddr;
+
     if ((VAddr & 7) != 0)
     {
         GenerateAddressErrorException(VAddr, false);
         return false;
     }
-    if (HaveWriteBP() && g_Debugger->WriteBP64(VAddr) && MemoryBreakpoint())
+    if (HaveWriteBP() && g_Debugger->WriteBP64(VAddr32) && MemoryBreakpoint())
     {
         return false;
     }
 
-    uint8_t * MemoryPtr = (uint8_t*)m_MemoryWriteMap[VAddr >> 12];
+    uint8_t * MemoryPtr = (uint8_t*)m_MemoryWriteMap[VAddr32 >> 12];
     if (MemoryPtr != (uint8_t *)-1)
     {
-        *(uint32_t*)(MemoryPtr + VAddr + 0) = *((uint32_t*)(&Value) + 1);
-        *(uint32_t*)(MemoryPtr + VAddr + 4) = *((uint32_t*)(&Value));
+        *(uint32_t*)(MemoryPtr + VAddr32 + 0) = *((uint32_t*)(&Value) + 1);
+        *(uint32_t*)(MemoryPtr + VAddr32 + 4) = *((uint32_t*)(&Value));
         return true;
     }
-    if (m_TLB_WriteMap[VAddr >> 12] == -1)
+    if (m_TLB_WriteMap[VAddr32 >> 12] == -1)
     {
         GenerateTLBWriteException(VAddr, __FUNCTION__);
         return false;
     }
-    return SD_NonMemory(VAddr, Value);
+    return SD_NonMemory(VAddr32, Value);
 }
 
 bool CMipsMemoryVM::ValidVaddr(uint32_t VAddr) const
@@ -602,15 +622,18 @@ bool CMipsMemoryVM::LB_NonMemory(uint32_t VAddr, uint8_t & Value)
     else if (PAddr >= 0x10000000 && PAddr < 0x16000000)
     {
         uint32_t Value32;
-        if (!m_RomMemoryHandler.Read32(PAddr & ~0x3, Value32))
+        if (!m_RomMemoryHandler.Read32(PAddr, Value32))
         {
             return false;
         }
-        Value = ((Value32 >> (((PAddr & 3) ^ 3) << 3)) & 0xff);
+        Value = ((Value32 >> (((PAddr & 1) ^ 3) << 3)) & 0xff);
     }
     else
     {
-        g_Notify->BreakPoint(__FILE__, __LINE__);
+        if (BreakOnUnhandledMemory())
+        {
+            g_Notify->BreakPoint(__FILE__, __LINE__);
+        }
         Value = 0;
     }
     return true;
@@ -632,15 +655,18 @@ bool CMipsMemoryVM::LH_NonMemory(uint32_t VAddr, uint16_t & Value)
     else if (PAddr >= 0x10000000 && PAddr < 0x16000000)
     {
         uint32_t Value32;
-        if (!m_RomMemoryHandler.Read32(PAddr & ~0x3, Value32))
+        if (!m_RomMemoryHandler.Read32(PAddr, Value32))
         {
             return false;
         }
-        Value = ((Value32 >> (((PAddr & 2) ^ 2) << 3)) & 0xffff);
+        Value = ((Value32 >> 16) & 0xffff);
     }
     else
     {
-        g_Notify->BreakPoint(__FILE__, __LINE__);
+        if (BreakOnUnhandledMemory())
+        {
+            g_Notify->BreakPoint(__FILE__, __LINE__);
+        }
         Value = 0;
     }
     return true;
@@ -704,7 +730,7 @@ bool CMipsMemoryVM::LD_NonMemory(uint32_t VAddr, uint64_t & Value)
     return false;
 }
 
-bool CMipsMemoryVM::SB_NonMemory(uint32_t VAddr, uint8_t Value)
+bool CMipsMemoryVM::SB_NonMemory(uint32_t VAddr, uint32_t Value)
 {
     uint32_t BaseAddress = m_TLB_ReadMap[VAddr >> 12];
     if (BaseAddress == -1)
@@ -727,18 +753,23 @@ bool CMipsMemoryVM::SB_NonMemory(uint32_t VAddr, uint8_t Value)
         {
             g_Recompiler->ClearRecompCode_Phys(PAddr & ~0xFFF, 0xFFC, CRecompiler::Remove_ProtectedMem);
             ::ProtectMemory(m_RDRAM + (PAddr & ~0xFFF), 0xFFC, MEM_READWRITE);
-            *(uint8_t *)(m_RDRAM + (PAddr  ^ 3)) = Value;
+            *(uint8_t *)(m_RDRAM + (PAddr  ^ 3)) = (uint8_t)Value;
         }
         break;
     default:
-        g_Notify->BreakPoint(__FILE__, __LINE__);
-        return false;
+        if (PAddr >= 0x10000000 && PAddr < 0x20000000)
+        {
+            m_RomMemoryHandler.Write32(PAddr, Value << ((3 - (PAddr & 3)) * 8), 0xFFFFFFFF);
+        }
+        else if (BreakOnUnhandledMemory())
+        {
+            g_Notify->BreakPoint(__FILE__, __LINE__);
+        }
     }
-
     return true;
 }
 
-bool CMipsMemoryVM::SH_NonMemory(uint32_t VAddr, uint16_t Value)
+bool CMipsMemoryVM::SH_NonMemory(uint32_t VAddr, uint32_t Value)
 {
     uint32_t BaseAddress = m_TLB_ReadMap[VAddr >> 12];
     if (BaseAddress == -1)
@@ -770,12 +801,19 @@ bool CMipsMemoryVM::SH_NonMemory(uint32_t VAddr, uint16_t Value)
                 {
                     m_TLB_WriteMap[VAddr >> 12] = PAddr - VAddr;
                 }
-                *(uint16_t *)(m_RDRAM + (PAddr ^ 2)) = Value;
+                *(uint16_t *)(m_RDRAM + (PAddr ^ 2)) = (uint16_t)Value;
             }
         }
         break;
     default:
-        g_Notify->BreakPoint(__FILE__, __LINE__);
+        if (PAddr >= 0x10000000 && PAddr < 0x20000000)
+        {
+            m_RomMemoryHandler.Write32(PAddr, Value << ((2 - (PAddr & 2)) * 8), 0xFFFFFFFF);
+        }
+        else if (BreakOnUnhandledMemory())
+        {
+            g_Notify->BreakPoint(__FILE__, __LINE__);
+        }
         return false;
     }
 
@@ -801,6 +839,7 @@ bool CMipsMemoryVM::SW_NonMemory(uint32_t VAddr, uint32_t Value)
     case 0x00500000:
     case 0x00600000:
     case 0x00700000:
+    case 0x00800000:
         if (PAddr < RdramSize())
         {
             if (CGameSettings::bSMM_Protect() || CGameSettings::bSMM_StoreInstruc())
@@ -839,13 +878,21 @@ bool CMipsMemoryVM::SW_NonMemory(uint32_t VAddr, uint32_t Value)
     case 0x04800000: m_SerialInterfaceHandler.Write32(PAddr, Value, 0xFFFFFFFF); break;
     case 0x05000000: m_CartridgeDomain2Address1Handler.Write32(PAddr, Value, 0xFFFFFFFF); break;
     case 0x06000000: m_CartridgeDomain1Address1Handler.Write32(PAddr, Value, 0xFFFFFFFF); break;
-    case 0x08000000: m_CartridgeDomain2Address2Handler.Write32(PAddr, Value, 0xFFFFFFFF); break;
+    case 0x08000000:
+    case 0x0fe00000:
+        m_CartridgeDomain2Address2Handler.Write32(PAddr, Value, 0xFFFFFFFF); 
+        break;
+    case 0x13F00000: m_ISViewerHandler.Write32(PAddr, Value, 0xFFFFFFFF); break;
     case 0x1FC00000: m_PifRamHandler.Write32(PAddr, Value, 0xFFFFFFFF); break;
     case 0x1FF00000: m_CartridgeDomain1Address3Handler.Write32(PAddr, Value, 0xFFFFFFFF); break;
     default:
-        if (PAddr >= 0x10000000 && PAddr < 0x16000000)
+        if (PAddr >= 0x10000000 && PAddr < 0x20000000)
         {
             m_RomMemoryHandler.Write32(PAddr, Value, 0xFFFFFFFF);
+        }
+        else if (BreakOnUnhandledMemory())
+        {
+            g_Notify->BreakPoint(__FILE__, __LINE__);
         }
         break;
     }
@@ -879,7 +926,14 @@ bool CMipsMemoryVM::SD_NonMemory(uint32_t VAddr, uint64_t Value)
         }
         break;
     default:
-        g_Notify->BreakPoint(__FILE__, __LINE__);
+        if (PAddr >= 0x10000000 && PAddr < 0x20000000)
+        {
+            m_RomMemoryHandler.Write32(PAddr, (int32_t)(Value >> 32), 0xFFFFFFFF);
+        }
+        else if (BreakOnUnhandledMemory())
+        {
+            g_Notify->BreakPoint(__FILE__, __LINE__);
+        }
         return false;
     }
 

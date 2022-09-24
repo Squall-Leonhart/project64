@@ -109,6 +109,15 @@
     <Filter Include="Header Files\Plugin Spec">
       <UniqueIdentifier>{a29536c1-cda4-43b0-b3c6-12a24f42be64}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\N64 System\Recompiler\x64-86">
+      <UniqueIdentifier>{ec8602cf-3980-4a8e-8cac-25f9ad4f7a42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\N64 System\Recompiler\Aarch64">
+      <UniqueIdentifier>{ae9f1045-e15e-4a27-8891-937c7608ee06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\N64 System\Recompiler\x64-86">
+      <UniqueIdentifier>{56644680-2b82-4343-8619-660b68685cba}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -249,16 +258,10 @@
     <ClCompile Include="N64System\Recompiler\RecompilerMemory.cpp">
       <Filter>Source Files\N64 System\Recompiler</Filter>
     </ClCompile>
-    <ClCompile Include="N64System\Recompiler\SectionInfo.cpp">
-      <Filter>Source Files\N64 System\Recompiler</Filter>
-    </ClCompile>
     <ClCompile Include="N64System\Mips\MemoryVirtualMem.cpp">
       <Filter>Source Files\N64 System\Mips</Filter>
     </ClCompile>
     <ClCompile Include="N64System\Mips\Mempak.cpp">
-      <Filter>Source Files\N64 System\Mips</Filter>
-    </ClCompile>
-    <ClCompile Include="N64System\Mips\OpcodeName.cpp">
       <Filter>Source Files\N64 System\Mips</Filter>
     </ClCompile>
     <ClCompile Include="N64System\Mips\PifRam.cpp">
@@ -305,9 +308,6 @@
     </ClCompile>
     <ClCompile Include="RomList\RomList.cpp">
       <Filter>Source Files\Rom List</Filter>
-    </ClCompile>
-    <ClCompile Include="N64System\Recompiler\RecompilerCodeLog.cpp">
-      <Filter>Source Files\N64 System\Recompiler</Filter>
     </ClCompile>
     <ClCompile Include="N64System\Recompiler\x86\x86RecompilerOps.cpp">
       <Filter>Source Files\N64 System\Recompiler\x86</Filter>
@@ -404,6 +404,27 @@
     </ClCompile>
     <ClCompile Include="N64System\MemoryHandler\CartridgeDomain2Address2Handler.cpp">
       <Filter>Source Files\N64 System\MemoryHandler</Filter>
+    </ClCompile>
+    <ClCompile Include="N64System\Mips\R4300iInstruction.cpp">
+      <Filter>Source Files\N64 System\Mips</Filter>
+    </ClCompile>
+    <ClCompile Include="N64System\MemoryHandler\ISViewerHandler.cpp">
+      <Filter>Source Files\N64 System\MemoryHandler</Filter>
+    </ClCompile>
+    <ClCompile Include="N64System\Recompiler\ExitInfo.cpp">
+      <Filter>Source Files\N64 System\Recompiler</Filter>
+    </ClCompile>
+    <ClCompile Include="N64System\Recompiler\JumpInfo.cpp">
+      <Filter>Source Files\N64 System\Recompiler</Filter>
+    </ClCompile>
+    <ClCompile Include="N64System\Recompiler\x64-86\x64RecompilerOps.cpp">
+      <Filter>Source Files\N64 System\Recompiler\x64-86</Filter>
+    </ClCompile>
+    <ClCompile Include="N64System\Recompiler\x64-86\x64ops.cpp">
+      <Filter>Source Files\N64 System\Recompiler\x64-86</Filter>
+    </ClCompile>
+    <ClCompile Include="N64System\Recompiler\x64-86\x64RegInfo.cpp">
+      <Filter>Source Files\N64 System\Recompiler\x64-86</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -602,12 +623,6 @@
     <ClInclude Include="N64System\Mips\Mempak.H">
       <Filter>Header Files\N64 System\Mips</Filter>
     </ClInclude>
-    <ClInclude Include="N64System\Mips\OpCode.h">
-      <Filter>Header Files\N64 System\Mips</Filter>
-    </ClInclude>
-    <ClInclude Include="N64System\Mips\OpcodeName.h">
-      <Filter>Header Files\N64 System\Mips</Filter>
-    </ClInclude>
     <ClInclude Include="N64System\Mips\PifRam.h">
       <Filter>Header Files\N64 System\Mips</Filter>
     </ClInclude>
@@ -665,9 +680,6 @@
     <ClInclude Include="RomList\RomList.h">
       <Filter>Header Files\Rom List</Filter>
     </ClInclude>
-    <ClInclude Include="N64System\Recompiler\RecompilerCodeLog.h">
-      <Filter>Header Files\N64 System\Recompiler</Filter>
-    </ClInclude>
     <ClInclude Include="N64System\Recompiler\x86\x86RecompilerOps.h">
       <Filter>Header Files\N64 System\Recompiler\x86</Filter>
     </ClInclude>
@@ -691,9 +703,6 @@
     </ClInclude>
     <ClInclude Include="N64System\Recompiler\RegBase.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="N64System\Recompiler\x64-86\x64RegInfo.h">
-      <Filter>Header Files\N64 System\Recompiler</Filter>
     </ClInclude>
     <ClInclude Include="Debugger.h">
       <Filter>Header Files</Filter>
@@ -790,6 +799,27 @@
     </ClInclude>
     <ClInclude Include="..\Project64-plugin-spec\Rsp.h">
       <Filter>Header Files\Plugin Spec</Filter>
+    </ClInclude>
+    <ClInclude Include="N64System\Mips\R4300iInstruction.h">
+      <Filter>Header Files\N64 System\Mips</Filter>
+    </ClInclude>
+    <ClInclude Include="N64System\Mips\R4300iOpcode.h">
+      <Filter>Header Files\N64 System\Mips</Filter>
+    </ClInclude>
+    <ClInclude Include="N64System\MemoryHandler\ISViewerHandler.h">
+      <Filter>Header Files\N64 System\MemoryHandler</Filter>
+    </ClInclude>
+    <ClInclude Include="N64System\Recompiler\x64-86\x64RegInfo.h">
+      <Filter>Header Files\N64 System\Recompiler\x64-86</Filter>
+    </ClInclude>
+    <ClInclude Include="N64System\Recompiler\Aarch64\Aarch64RegInfo.h">
+      <Filter>Header Files\N64 System\Recompiler\Aarch64</Filter>
+    </ClInclude>
+    <ClInclude Include="N64System\Recompiler\x64-86\x64RecompilerOps.h">
+      <Filter>Header Files\N64 System\Recompiler\x64-86</Filter>
+    </ClInclude>
+    <ClInclude Include="N64System\Recompiler\x64-86\x64ops.h">
+      <Filter>Header Files\N64 System\Recompiler\x64-86</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

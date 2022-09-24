@@ -10,6 +10,7 @@
 #include <Project64-core\N64System\MemoryHandler\CartridgeDomain2Address1Handler.h>
 #include <Project64-core\N64System\MemoryHandler\CartridgeDomain2Address2Handler.h>
 #include <Project64-core\N64System\MemoryHandler\DisplayControlRegHandler.h>
+#include <Project64-core\N64System\MemoryHandler\ISViewerHandler.h>
 #include <Project64-core\N64System\MemoryHandler\MIPSInterfaceHandler.h>
 #include <Project64-core\N64System\MemoryHandler\PeripheralInterfaceHandler.h>
 #include <Project64-core\N64System\MemoryHandler\PifRamHandler.h>
@@ -82,15 +83,15 @@ public:
     bool UpdateMemoryValue16(uint32_t VAddr, uint16_t Value);
     bool UpdateMemoryValue32(uint32_t VAddr, uint32_t Value);
 
-    bool LB_Memory(uint32_t VAddr, uint8_t & Value);
-    bool LH_Memory(uint32_t VAddr, uint16_t & Value);
-    bool LW_Memory(uint32_t VAddr, uint32_t & Value);
-    bool LD_Memory(uint32_t VAddr, uint64_t & Value);
+    bool LB_Memory(uint64_t VAddr, uint8_t & Value);
+    bool LH_Memory(uint64_t VAddr, uint16_t & Value);
+    bool LW_Memory(uint64_t VAddr, uint32_t & Value);
+    bool LD_Memory(uint64_t VAddr, uint64_t & Value);
 
-    bool SB_Memory(uint32_t VAddr, uint8_t Value);
-    bool SH_Memory(uint32_t VAddr, uint16_t Value);
-    bool SW_Memory(uint32_t VAddr, uint32_t Value);
-    bool SD_Memory(uint32_t VAddr, uint64_t Value);
+    bool SB_Memory(uint64_t VAddr, uint32_t Value);
+    bool SH_Memory(uint64_t VAddr, uint32_t Value);
+    bool SW_Memory(uint64_t VAddr, uint32_t Value);
+    bool SD_Memory(uint64_t VAddr, uint64_t Value);
 
     int32_t   MemoryFilter(uint32_t dwExptCode, void * lpExceptionPointer);
 
@@ -117,6 +118,7 @@ public:
 
     AudioInterfaceHandler & AudioInterface(void) { return m_AudioInterfaceHandler; }
     VideoInterfaceHandler & VideoInterface(void) { return m_VideoInterfaceHandler; }
+    RomMemoryHandler & RomMemory(void) { return m_RomMemoryHandler; };
 
 private:
     CMipsMemoryVM();
@@ -139,8 +141,8 @@ private:
     bool LW_NonMemory(uint32_t VAddr, uint32_t & Value);
     bool LD_NonMemory(uint32_t VAddr, uint64_t & Value);
 
-    bool SB_NonMemory(uint32_t VAddr, uint8_t Value);
-    bool SH_NonMemory(uint32_t VAddr, uint16_t Value);
+    bool SB_NonMemory(uint32_t VAddr, uint32_t Value);
+    bool SH_NonMemory(uint32_t VAddr, uint32_t Value);
     bool SW_NonMemory(uint32_t VAddr, uint32_t Value);
     bool SD_NonMemory(uint32_t VAddr, uint64_t Value);
 
@@ -176,6 +178,7 @@ private:
     CartridgeDomain2Address1Handler m_CartridgeDomain2Address1Handler;
     CartridgeDomain2Address2Handler m_CartridgeDomain2Address2Handler;
     DisplayControlRegHandler m_DPCommandRegistersHandler;
+    ISViewerHandler m_ISViewerHandler;
     MIPSInterfaceHandler m_MIPSInterfaceHandler;
     PeripheralInterfaceHandler m_PeripheralInterfaceHandler;
     PifRamHandler m_PifRamHandler;

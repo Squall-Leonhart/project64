@@ -42,7 +42,7 @@ void SyncEvent::Trigger()
 #endif
 }
 
-bool SyncEvent::IsTriggered(int32_t iWaitTime)
+bool SyncEvent::IsTriggered(int32_t iWaitTime) const
 {
 #ifdef _WIN32
     return (WAIT_OBJECT_0 == WaitForSingleObject(m_Event, iWaitTime));
@@ -53,7 +53,6 @@ bool SyncEvent::IsTriggered(int32_t iWaitTime)
         pthread_cond_wait((pthread_cond_t*)m_cond, (pthread_mutex_t*)m_Event);
     }
     pthread_mutex_unlock((pthread_mutex_t*)m_Event);
-    Reset();
     return true;
 #endif
 }

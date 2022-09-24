@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include <Project64-core/N64System/Mips/MemoryVirtualMem.h>
 #include <Project64-core/N64System/Recompiler/Recompiler.h>
-#include <Project64-core/N64System/Recompiler/RecompilerCodeLog.h>
 #include <Project64-core/N64System/SystemGlobals.h>
 #include <Project64-core/N64System/N64System.h>
 #ifndef _WIN32
@@ -367,7 +366,6 @@ void CMipsMemoryVM::DumpArmExceptionInfo(uint32_t MemAddress, mcontext_t & conte
     {
         WriteTrace(TraceExceptionHandler, TraceError, "GPR[%s] 0x%08X%08X", CRegName::GPR[count], g_Reg->m_GPR[count].W[1], g_Reg->m_GPR[count].W[0]);
     }
-    Flush_Recompiler_Log();
     TraceFlushLog();
 }
 
@@ -660,6 +658,8 @@ int32_t CMipsMemoryVM::MemoryFilter(uint32_t dwExptCode, void * lpExceptionPoint
     }
     return EXCEPTION_EXECUTE_HANDLER;
 #else
+    dwExptCode = dwExptCode; //unreferenced formal parameter
+    lpExceptionPointer = lpExceptionPointer; // unreferenced formal parameter
     return EXCEPTION_EXECUTE_HANDLER;
 #endif
 }

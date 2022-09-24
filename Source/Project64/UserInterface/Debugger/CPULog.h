@@ -1,11 +1,9 @@
 #pragma once
 
-#include <stdafx.h>
-
 typedef struct
 {
     uint32_t pc;
-    OPCODE opcode;
+    R4300iOpcode opcode;
     MIPS_DWORD gpr[32];
     MIPS_DWORD gprHi;
     MIPS_DWORD gprLo;

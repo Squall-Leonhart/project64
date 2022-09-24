@@ -45,6 +45,7 @@
     <string name="reset_summary">Restore default settings</string>
     <string name="reset_title">Reset</string>
     <string name="settings_title">Settings</string>
+    <string name="game_settings_title">Game Settings</string>
     <string name="preferences">Preferences</string>
     <string name="displayFps_title">Framerate</string>
     <string name="displayFps_summary">Display FPS on screen</string>
@@ -94,6 +95,7 @@
     <string name="TraceRomList">Rom List</string>
     <string name="TraceExceptionHandler">Exception Handler</string>
     <string name="TraceVideoMD5">MD5</string>
+    <string name="TraceVideoThread">Thread</string>
     <string name="TraceVideoPath">Path</string>
     <string name="TraceVideoSettings">Settings</string>
     <string name="TraceVideoUnknown">Unknown</string>
