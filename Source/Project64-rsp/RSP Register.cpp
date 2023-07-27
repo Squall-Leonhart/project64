@@ -62,7 +62,7 @@ void Create_RSP_Register_Window(int Child)
         if (!InRSPRegisterWindow)
         {
             CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Create_RSP_Register_Window,
-                         (LPVOID)true, 0, &ThreadID);
+                         (LPVOID) true, 0, &ThreadID);
         }
         else
         {
@@ -136,49 +136,32 @@ void PaintRSP_HiddenPanel(HWND hWnd)
     int OldBkMode;
     BeginPaint(hWnd, &ps);
 
-    rcBox.left = 66;
-    rcBox.top = 39;
-    rcBox.right = 320;
-    rcBox.bottom = 265;
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hWnd);
+    float scalingFactor = (float)dpi / 96;
+
+    rcBox.left = (int)(41 * scalingFactor);
+    rcBox.top = (int)(29 * scalingFactor);
+    rcBox.right = (int)(573 * scalingFactor);
+    rcBox.bottom = (int)(275 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
-
-    rcBox.left = 350;
-    rcBox.top = 39;
-    rcBox.right = 510;
-    rcBox.bottom = 265;
-    DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
-
-    rcBox.left = 75;
-    rcBox.top = 35;
-    rcBox.right = 150;
-    rcBox.bottom = 50;
-    FillRect(ps.hdc, &rcBox, (HBRUSH)COLOR_WINDOW);
-
-    rcBox.left = 365;
-    rcBox.top = 35;
-    rcBox.right = 425;
-    rcBox.bottom = 50;
-    FillRect(ps.hdc, &rcBox, (HBRUSH)COLOR_WINDOW);
 
     hOldFont = (HFONT)SelectObject(ps.hdc,
-                                   GetStockObject((int)DEFAULT_GUI_FONT));
+                                   GetStockObject(DEFAULT_GUI_FONT));
     OldBkMode = SetBkMode(ps.hdc, TRANSPARENT);
 
-    TextOutA(ps.hdc, 80, 34, "Accumulators", 12);
-    TextOutA(ps.hdc, 80, 56, "Accumulator 0:", 14);
-    TextOutA(ps.hdc, 80, 81, "Accumulator 1:", 14);
-    TextOutA(ps.hdc, 80, 106, "Accumulator 2:", 14);
-    TextOutA(ps.hdc, 80, 131, "Accumulator 3:", 14);
-    TextOutA(ps.hdc, 80, 156, "Accumulator 4:", 14);
-    TextOutA(ps.hdc, 80, 181, "Accumulator 5:", 14);
-    TextOutA(ps.hdc, 80, 206, "Accumulator 6:", 14);
-    TextOutA(ps.hdc, 80, 231, "Accumulator 7:", 14);
-
-    TextOutA(ps.hdc, 371, 34, "RSP Flags", 9);
-    TextOutA(ps.hdc, 375, 86, "Flag 0:", 7);
-    TextOutA(ps.hdc, 375, 116, "Flag 2:", 7);
-    TextOutA(ps.hdc, 375, 146, "Flag 3:", 7);
-    TextOutA(ps.hdc, 375, 176, "Flag 4:", 7);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(46 * scalingFactor), "Accumulator Lo:", 15);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(74 * scalingFactor), "Accumulator Md:", 15);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(102 * scalingFactor), "Accumulator Hi:", 15);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(130 * scalingFactor), "VCO Lo:", 7);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(158 * scalingFactor), "VCO Hi:", 7);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(186 * scalingFactor), "VCC Lo:", 7);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(214 * scalingFactor), "VCC Hi:", 7);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(46 * scalingFactor), "Flag Lo:", 8);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(74 * scalingFactor), "Flag Hi:", 8);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(102 * scalingFactor), "Loop:", 5);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(130 * scalingFactor), "VCE Lo:", 7);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(158 * scalingFactor), "VCE Hi:", 7);
 
     SelectObject(ps.hdc, hOldFont);
     SetBkMode(ps.hdc, OldBkMode);
@@ -193,32 +176,36 @@ void PaintRSP_CP0Panel(HWND hWnd)
     int OldBkMode;
     BeginPaint(hWnd, &ps);
 
-    rcBox.left = 41;
-    rcBox.top = 29;
-    rcBox.right = 573;
-    rcBox.bottom = 275;
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hWnd);
+    float scalingFactor = (float)dpi / 96;
+
+    rcBox.left = (int)(41 * scalingFactor);
+    rcBox.top = (int)(29 * scalingFactor);
+    rcBox.right = (int)(573 * scalingFactor);
+    rcBox.bottom = (int)(275 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
     hOldFont = (HFONT)SelectObject(ps.hdc,
                                    GetStockObject(DEFAULT_GUI_FONT));
     OldBkMode = SetBkMode(ps.hdc, TRANSPARENT);
 
-    TextOutA(ps.hdc, 53, 48, "Reg 0 - SP memory address:", 26);
-    TextOutA(ps.hdc, 53, 76, "Reg 1 - SP DRAM DMA address:", 28);
-    TextOutA(ps.hdc, 53, 104, "Reg 2 - SP read DMA length:", 27);
-    TextOutA(ps.hdc, 53, 132, "Reg 3 - SP write DMA length:", 28);
-    TextOutA(ps.hdc, 53, 160, "Reg 4 - SP status:", 18);
-    TextOutA(ps.hdc, 53, 188, "Reg 5 - SP DMA full:", 20);
-    TextOutA(ps.hdc, 53, 216, "Reg 6 - SP DMA busy:", 20);
-    TextOutA(ps.hdc, 53, 244, "Reg 7 - SP semaphore:", 21);
-    TextOutA(ps.hdc, 313, 48, "Reg 8 - DP CMD DMA start:", 25);
-    TextOutA(ps.hdc, 313, 76, "Reg 9 - DP CMD DMA end:", 23);
-    TextOutA(ps.hdc, 313, 104, "Reg 10 - DP CMD DMA current:", 28);
-    TextOutA(ps.hdc, 313, 132, "Reg 11 - DP CMD status:", 23);
-    TextOutA(ps.hdc, 313, 160, "Reg 12 - DP clock counter:", 26);
-    TextOutA(ps.hdc, 313, 188, "Reg 13 - DP buffer busy counter:", 32);
-    TextOutA(ps.hdc, 313, 216, "Reg 14 - DP pipe busy counter:", 30);
-    TextOutA(ps.hdc, 313, 244, "Reg 15 - DP TMEM load counter:", 30);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(46 * scalingFactor), "SP_MEM_ADDR_REG:", 16);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(74 * scalingFactor), "SP_DRAM_ADDR_REG:", 17);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(102 * scalingFactor), "SP_RD_LEN_REG:", 14);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(130 * scalingFactor), "SP_WR_LEN_REG:", 14);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(158 * scalingFactor), "SP_STATUS_REG:", 14);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(186 * scalingFactor), "SP_DMA_FULL_REG:", 16);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(214 * scalingFactor), "SP_DMA_BUSY_REG:", 16);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(242 * scalingFactor), "SP_SEMAPHORE_REG:", 17);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(46 * scalingFactor), "DPC_START_REG:", 14);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(74 * scalingFactor), "DPC_END_REG:", 12);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(102 * scalingFactor), "DPC_CURRENT_REG:", 16);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(130 * scalingFactor), "DPC_STATUS_REG:", 15);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(158 * scalingFactor), "DPC_CLOCK_REG:", 14);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(186 * scalingFactor), "DPC_BUFBUSY_REG:", 16);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(214 * scalingFactor), "DPC_PIPEBUSY_REG:", 17);
+    TextOutA(ps.hdc, (int)(313 * scalingFactor), (int)(242 * scalingFactor), "DPC_TMEM_REG:", 13);
 
     SelectObject(ps.hdc, hOldFont);
     SetBkMode(ps.hdc, OldBkMode);
@@ -233,48 +220,69 @@ void PaintRSP_GPRPanel(HWND hWnd)
     int OldBkMode;
     BeginPaint(hWnd, &ps);
 
-    rcBox.left = 41;
-    rcBox.top = 29;
-    rcBox.right = 573;
-    rcBox.bottom = 275;
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hWnd);
+    float scalingFactor = (float)dpi / 96;
+
+    rcBox.left = (int)(41 * scalingFactor);
+    rcBox.top = (int)(29 * scalingFactor);
+    rcBox.right = (int)(573 * scalingFactor);
+    rcBox.bottom = (int)(275 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
     hOldFont = (HFONT)SelectObject(ps.hdc,
                                    GetStockObject(DEFAULT_GUI_FONT));
     OldBkMode = SetBkMode(ps.hdc, TRANSPARENT);
 
-    TextOutA(ps.hdc, 53, 46, "R0 - Reg 0:", 11);
-    TextOutA(ps.hdc, 53, 66, "AT - Reg 1:", 11);
-    TextOutA(ps.hdc, 53, 86, "V0 - Reg 2:", 11);
-    TextOutA(ps.hdc, 53, 106, "V1 - Reg 3:", 11);
-    TextOutA(ps.hdc, 53, 126, "A0 - Reg 4:", 11);
-    TextOutA(ps.hdc, 53, 146, "A1 - Reg 5:", 11);
-    TextOutA(ps.hdc, 53, 166, "A2 - Reg 6:", 11);
-    TextOutA(ps.hdc, 53, 186, "A3 - Reg 7:", 11);
-    TextOutA(ps.hdc, 53, 206, "T0 - Reg 8:", 11);
-    TextOutA(ps.hdc, 53, 226, "T1 - Reg 9:", 11);
-    TextOutA(ps.hdc, 53, 246, "T2 - Reg 10:", 12);
-    TextOutA(ps.hdc, 228, 46, "T3 - Reg 11:", 12);
-    TextOutA(ps.hdc, 228, 66, "T4 - Reg 12:", 12);
-    TextOutA(ps.hdc, 228, 86, "T5 - Reg 13:", 12);
-    TextOutA(ps.hdc, 228, 106, "T6 - Reg 14:", 12);
-    TextOutA(ps.hdc, 228, 126, "T7 - Reg 15:", 12);
-    TextOutA(ps.hdc, 228, 146, "S0 - Reg 16:", 12);
-    TextOutA(ps.hdc, 228, 166, "S1 - Reg 17:", 12);
-    TextOutA(ps.hdc, 228, 186, "S2 - Reg 18:", 12);
-    TextOutA(ps.hdc, 228, 206, "S3 - Reg 19:", 12);
-    TextOutA(ps.hdc, 228, 226, "S4 - Reg 20:", 12);
-    TextOutA(ps.hdc, 228, 246, "S5 - Reg 21:", 12);
-    TextOutA(ps.hdc, 408, 46, "S6 - Reg 22:", 12);
-    TextOutA(ps.hdc, 408, 66, "S7 - Reg 23:", 12);
-    TextOutA(ps.hdc, 408, 86, "T8 - Reg 24:", 12);
-    TextOutA(ps.hdc, 408, 106, "T9 - Reg 25:", 12);
-    TextOutA(ps.hdc, 408, 126, "K0 - Reg 26:", 12);
-    TextOutA(ps.hdc, 408, 146, "K1 - Reg 27:", 12);
-    TextOutA(ps.hdc, 408, 166, "GP - Reg 28:", 12);
-    TextOutA(ps.hdc, 408, 186, "SP - Reg 29:", 12);
-    TextOutA(ps.hdc, 408, 206, "S8 - Reg 30:", 12);
-    TextOutA(ps.hdc, 408, 226, "RA - Reg 31:", 12);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(46 * scalingFactor), "R0 - Reg 0:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(66 * scalingFactor), "AT - Reg 1:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(86 * scalingFactor), "V0 - Reg 2:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(106 * scalingFactor), "V1 - Reg 3:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(126 * scalingFactor), "A0 - Reg 4:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(146 * scalingFactor), "A1 - Reg 5:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(166 * scalingFactor), "A2 - Reg 6:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(186 * scalingFactor), "A3 - Reg 7:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(206 * scalingFactor), "T0 - Reg 8:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(226 * scalingFactor), "T1 - Reg 9:", 11);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(246 * scalingFactor), "T2 - Reg 10:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(46 * scalingFactor), "T3 - Reg 11:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(66 * scalingFactor), "T4 - Reg 12:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(86 * scalingFactor), "T5 - Reg 13:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(106 * scalingFactor), "T6 - Reg 14:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(126 * scalingFactor), "T7 - Reg 15:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(146 * scalingFactor), "S0 - Reg 16:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(166 * scalingFactor), "S1 - Reg 17:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(186 * scalingFactor), "S2 - Reg 18:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(206 * scalingFactor), "S3 - Reg 19:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(226 * scalingFactor), "S4 - Reg 20:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(246 * scalingFactor), "S5 - Reg 21:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(46 * scalingFactor), "S6 - Reg 22:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(66 * scalingFactor), "S7 - Reg 23:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(86 * scalingFactor), "T8 - Reg 24:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(106 * scalingFactor), "T9 - Reg 25:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(126 * scalingFactor), "K0 - Reg 26:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(146 * scalingFactor), "K1 - Reg 27:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(166 * scalingFactor), "GP - Reg 28:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(66 * scalingFactor), "T4 - Reg 12:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(86 * scalingFactor), "T5 - Reg 13:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(106 * scalingFactor), "T6 - Reg 14:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(126 * scalingFactor), "T7 - Reg 15:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(146 * scalingFactor), "S0 - Reg 16:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(166 * scalingFactor), "S1 - Reg 17:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(186 * scalingFactor), "S2 - Reg 18:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(206 * scalingFactor), "S3 - Reg 19:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(226 * scalingFactor), "S4 - Reg 20:", 12);
+    TextOutA(ps.hdc, (int)(228 * scalingFactor), (int)(246 * scalingFactor), "S5 - Reg 21:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(46 * scalingFactor), "S6 - Reg 22:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(66 * scalingFactor), "S7 - Reg 23:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(86 * scalingFactor), "T8 - Reg 24:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(106 * scalingFactor), "T9 - Reg 25:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(126 * scalingFactor), "K0 - Reg 26:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(146 * scalingFactor), "K1 - Reg 27:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(166 * scalingFactor), "GP - Reg 28:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(186 * scalingFactor), "SP - Reg 29:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(206 * scalingFactor), "S8 - Reg 30:", 12);
+    TextOutA(ps.hdc, (int)(403 * scalingFactor), (int)(226 * scalingFactor), "RA - Reg 31:", 12);
 
     SelectObject(ps.hdc, hOldFont);
     SetBkMode(ps.hdc, OldBkMode);
@@ -289,32 +297,36 @@ void PaintRSP_Vector1_Panel(HWND hWnd)
     int OldBkMode;
     BeginPaint(hWnd, &ps);
 
-    rcBox.left = 10;
-    rcBox.top = 29;
-    rcBox.right = 606;
-    rcBox.bottom = 275;
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hWnd);
+    float scalingFactor = (float)dpi / 96;
+
+    rcBox.left = (int)(41 * scalingFactor);
+    rcBox.top = (int)(29 * scalingFactor);
+    rcBox.right = (int)(573 * scalingFactor);
+    rcBox.bottom = (int)(275 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
     hOldFont = (HFONT)SelectObject(ps.hdc,
                                    GetStockObject(DEFAULT_GUI_FONT));
     OldBkMode = SetBkMode(ps.hdc, TRANSPARENT);
 
-    TextOutA(ps.hdc, 20, 48, "$v0:", 4);
-    TextOutA(ps.hdc, 20, 76, "$v1:", 4);
-    TextOutA(ps.hdc, 20, 104, "$v2:", 4);
-    TextOutA(ps.hdc, 20, 132, "$v3:", 4);
-    TextOutA(ps.hdc, 20, 160, "$v4:", 4);
-    TextOutA(ps.hdc, 20, 188, "$v5:", 4);
-    TextOutA(ps.hdc, 20, 216, "$v6:", 4);
-    TextOutA(ps.hdc, 20, 244, "$v7:", 4);
-    TextOutA(ps.hdc, 310, 48, "$v8:", 4);
-    TextOutA(ps.hdc, 310, 76, "$v9:", 4);
-    TextOutA(ps.hdc, 310, 104, "$v10:", 5);
-    TextOutA(ps.hdc, 310, 132, "$v11:", 5);
-    TextOutA(ps.hdc, 310, 160, "$v12:", 5);
-    TextOutA(ps.hdc, 310, 188, "$v13:", 5);
-    TextOutA(ps.hdc, 310, 216, "$v14:", 5);
-    TextOutA(ps.hdc, 310, 244, "$v15:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(46 * scalingFactor), "$v00:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(74 * scalingFactor), "$v01:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(102 * scalingFactor), "$v02:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(130 * scalingFactor), "$v03:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(158 * scalingFactor), "$v04:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(186 * scalingFactor), "$v05:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(214 * scalingFactor), "$v06:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(242 * scalingFactor), "$v07:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(46 * scalingFactor), "$v08:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(74 * scalingFactor), "$v09:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(102 * scalingFactor), "$v10:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(130 * scalingFactor), "$v11:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(158 * scalingFactor), "$v12:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(186 * scalingFactor), "$v13:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(214 * scalingFactor), "$v14:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(242 * scalingFactor), "$v15:", 5);
 
     SelectObject(ps.hdc, hOldFont);
     SetBkMode(ps.hdc, OldBkMode);
@@ -329,32 +341,36 @@ void PaintRSP_Vector2_Panel(HWND hWnd)
     int OldBkMode;
     BeginPaint(hWnd, &ps);
 
-    rcBox.left = 10;
-    rcBox.top = 29;
-    rcBox.right = 606;
-    rcBox.bottom = 275;
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hWnd);
+    float scalingFactor = (float)dpi / 96;
+
+    rcBox.left = (int)(41 * scalingFactor);
+    rcBox.top = (int)(29 * scalingFactor);
+    rcBox.right = (int)(573 * scalingFactor);
+    rcBox.bottom = (int)(275 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
     hOldFont = (HFONT)SelectObject(ps.hdc,
                                    GetStockObject(DEFAULT_GUI_FONT));
     OldBkMode = SetBkMode(ps.hdc, TRANSPARENT);
 
-    TextOutA(ps.hdc, 20, 48, "$v16:", 5);
-    TextOutA(ps.hdc, 20, 76, "$v17:", 5);
-    TextOutA(ps.hdc, 20, 104, "$v18:", 5);
-    TextOutA(ps.hdc, 20, 132, "$v19:", 5);
-    TextOutA(ps.hdc, 20, 160, "$v20:", 5);
-    TextOutA(ps.hdc, 20, 188, "$v21:", 5);
-    TextOutA(ps.hdc, 20, 216, "$v22:", 5);
-    TextOutA(ps.hdc, 20, 244, "$v23:", 5);
-    TextOutA(ps.hdc, 310, 48, "$v24:", 5);
-    TextOutA(ps.hdc, 310, 76, "$v25:", 5);
-    TextOutA(ps.hdc, 310, 104, "$v26:", 5);
-    TextOutA(ps.hdc, 310, 132, "$v27:", 5);
-    TextOutA(ps.hdc, 310, 160, "$v28:", 5);
-    TextOutA(ps.hdc, 310, 188, "$v29:", 5);
-    TextOutA(ps.hdc, 310, 216, "$v30:", 5);
-    TextOutA(ps.hdc, 310, 244, "$v31:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(46 * scalingFactor), "$v16:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(74 * scalingFactor), "$v17:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(102 * scalingFactor), "$v18:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(130 * scalingFactor), "$v19:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(158 * scalingFactor), "$v20:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(186 * scalingFactor), "$v21:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(214 * scalingFactor), "$v22:", 5);
+    TextOutA(ps.hdc, (int)(53 * scalingFactor), (int)(242 * scalingFactor), "$v23:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(46 * scalingFactor), "$v24:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(74 * scalingFactor), "$v25:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(102 * scalingFactor), "$v26:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(130 * scalingFactor), "$v27:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(158 * scalingFactor), "$v28:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(186 * scalingFactor), "$v29:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(214 * scalingFactor), "$v30:", 5);
+    TextOutA(ps.hdc, (int)(343 * scalingFactor), (int)(242 * scalingFactor), "$v31:", 5);
 
     SelectObject(ps.hdc, hOldFont);
     SetBkMode(ps.hdc, OldBkMode);
@@ -412,7 +428,7 @@ LRESULT CALLBACK RSP_Registers_Proc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM 
         SetupRSP_RegistersMain(hDlg);
         break;
     case WM_MOVE:
-        //StoreCurrentWinPos("RSP Registers",hDlg);
+        // StoreCurrentWinPos("RSP Registers",hDlg);
         break;
     case WM_SIZE:
         GetClientRect(hDlg, &rcDisp);
@@ -449,17 +465,21 @@ LRESULT CALLBACK RSP_Registers_Proc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM 
 
 void SetupRSP_HiddenPanel(HWND hDlg)
 {
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    float scalingFactor = (float)dpi / 96;
+
     int count;
 
     for (count = 0; count < 8; count++)
     {
-        hHIDDEN[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 170, (count * 25) + 60, 140, 19,
+        hHIDDEN[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(225 * scalingFactor), (int)((count * 28 + 53) * scalingFactor), (int)(75 * scalingFactor), (int)(19 * scalingFactor),
                                          hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hHIDDEN[count], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
     for (count = 0; count < 4; count++)
     {
-        hHIDDEN[count + 8] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 425, (count * 30) + 90, 55, 19,
+        hHIDDEN[count + 8] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(485 * scalingFactor), (int)((count * 28 + 53) * scalingFactor), (int)(75 * scalingFactor), (int)(19 * scalingFactor),
                                              hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hHIDDEN[count + 8], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
@@ -467,17 +487,21 @@ void SetupRSP_HiddenPanel(HWND hDlg)
 
 void SetupRSP_CP0Panel(HWND hDlg)
 {
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    float scalingFactor = (float)dpi / 96;
+
     int count;
 
     for (count = 0; count < 8; count++)
     {
-        hCP0[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 225, (count * 28) + 53, 75, 19,
+        hCP0[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(225 * scalingFactor), (int)((count * 28 + 53) * scalingFactor), (int)(75 * scalingFactor), (int)(19 * scalingFactor),
                                       hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hCP0[count], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
     for (count = 0; count < 8; count++)
     {
-        hCP0[count + 8] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 485, (count * 28) + 53, 75, 19,
+        hCP0[count + 8] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(485 * scalingFactor), (int)((count * 28 + 53) * scalingFactor), (int)(75 * scalingFactor), (int)(19 * scalingFactor),
                                           hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hCP0[count + 8], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
@@ -485,23 +509,27 @@ void SetupRSP_CP0Panel(HWND hDlg)
 
 void SetupRSP_GPRPanel(HWND hDlg)
 {
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    float scalingFactor = (float)dpi / 96;
+
     int count;
 
     for (count = 0; count < 11; count++)
     {
-        hGPR[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 135, (count * 20) + 50, 75, 19,
+        hGPR[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(135 * scalingFactor), (int)((count * 20 + 50) * scalingFactor), (int)(75 * scalingFactor), (int)(19 * scalingFactor),
                                       hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hGPR[count], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
     for (count = 0; count < 11; count++)
     {
-        hGPR[count + 11] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 315, (count * 20) + 50, 75, 19,
+        hGPR[count + 11] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(315 * scalingFactor), (int)((count * 20 + 50) * scalingFactor), (int)(75 * scalingFactor), (int)(19 * scalingFactor),
                                            hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hGPR[count + 11], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
     for (count = 0; count < 10; count++)
     {
-        hGPR[count + 22] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 485, (count * 20) + 50, 75, 19,
+        hGPR[count + 22] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(485 * scalingFactor), (int)((count * 20 + 50) * scalingFactor), (int)(75 * scalingFactor), (int)(19 * scalingFactor),
                                            hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hGPR[count + 22], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
@@ -509,11 +537,16 @@ void SetupRSP_GPRPanel(HWND hDlg)
 
 void SetupRSP_RegistersMain(HWND hDlg)
 {
-#define WindowWidth 630
-#define WindowHeight 325
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    float scalingFactor = (float)dpi / 96;
+
+    // Scale the window size
+    int WindowWidth = (int)(630 * scalingFactor);
+    int WindowHeight = (int)(325 * scalingFactor);
     DWORD X, Y;
 
-    hTab = CreateWindowExA(0, WC_TABCONTROLA, "", WS_TABSTOP | WS_CHILD | WS_VISIBLE, 5, 6, 616, 290,
+    hTab = CreateWindowExA(0, WC_TABCONTROLA, "", WS_TABSTOP | WS_CHILD | WS_VISIBLE, 5, 6, (int)(616 * scalingFactor), (int)(290 * scalingFactor),
                            hDlg, (HMENU)IDC_TAB_CONTROL, (HINSTANCE)hinstDLL, NULL);
     if (hTab)
     {
@@ -543,7 +576,7 @@ void SetupRSP_RegistersMain(HWND hDlg)
     SetupRSP_Vect1Panel(hDlg);
     SetupRSP_Vect2Panel(hDlg);
 
-    hStatic = CreateWindowExA(0, "STATIC", "", WS_CHILD | WS_VISIBLE, 5, 6, 616, 290, hDlg, 0, (HINSTANCE)hinstDLL, NULL);
+    hStatic = CreateWindowExA(0, "STATIC", "", WS_CHILD | WS_VISIBLE, 5, 6, (int)(616 * scalingFactor), (int)(290 * scalingFactor), hDlg, 0, (HINSTANCE)hinstDLL, NULL);
 #ifdef _M_IX86
     RefreshProc = (WNDPROC)SetWindowLong(hStatic, GWL_WNDPROC, (long)RefreshRSP_RegProc);
 #else
@@ -554,7 +587,7 @@ void SetupRSP_RegistersMain(HWND hDlg)
     ShowRSP_RegisterPanel(GeneralPurpose);
     SetWindowTextA(hDlg, " RSP Registers");
 
-    //if ( !GetStoredWinPos( "RSP Registers", &X, &Y ) ) {
+    // if (!GetStoredWinPos("RSP Registers", &X, &Y)) {
     X = (GetSystemMetrics(SM_CXSCREEN) - WindowWidth) / 2;
     Y = (GetSystemMetrics(SM_CYSCREEN) - WindowHeight) / 2;
     //}
@@ -563,17 +596,21 @@ void SetupRSP_RegistersMain(HWND hDlg)
 
 void SetupRSP_Vect1Panel(HWND hDlg)
 {
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    float scalingFactor = (float)dpi / 96;
+
     int count;
 
     for (count = 0; count < 8; count++)
     {
-        hVECT1[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 55, (count * 28) + 52, 254, 19,
+        hVECT1[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(55 * scalingFactor), (int)((count * 28 + 52) * scalingFactor), (int)(254 * scalingFactor), (int)(19 * scalingFactor),
                                         hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hVECT1[count], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
     for (count = 0; count < 8; count++)
     {
-        hVECT1[count + 8] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 345, (count * 28) + 52, 254, 19,
+        hVECT1[count + 8] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(345 * scalingFactor), (int)((count * 28 + 52) * scalingFactor), (int)(254 * scalingFactor), (int)(19 * scalingFactor),
                                             hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hVECT1[count + 8], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
@@ -581,17 +618,21 @@ void SetupRSP_Vect1Panel(HWND hDlg)
 
 void SetupRSP_Vect2Panel(HWND hDlg)
 {
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    float scalingFactor = (float)dpi / 96;
+
     int count;
 
     for (count = 0; count < 8; count++)
     {
-        hVECT2[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 55, (count * 28) + 52, 254, 19,
+        hVECT2[count] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(55 * scalingFactor), (int)((count * 28 + 52) * scalingFactor), (int)(254 * scalingFactor), (int)(19 * scalingFactor),
                                         hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hVECT2[count], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
     for (count = 0; count < 8; count++)
     {
-        hVECT2[count + 8] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, 345, (count * 28) + 52, 254, 19,
+        hVECT2[count + 8] = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | ES_READONLY | WS_BORDER | WS_TABSTOP, (int)(345 * scalingFactor), (int)((count * 28 + 52) * scalingFactor), (int)(254 * scalingFactor), (int)(19 * scalingFactor),
                                             hDlg, 0, (HINSTANCE)hinstDLL, NULL);
         SendMessage(hVECT2[count + 8], WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
