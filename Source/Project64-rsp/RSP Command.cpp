@@ -437,56 +437,60 @@ void Paint_RSP_Commands(HWND hDlg)
 
     BeginPaint(hDlg, &ps);
 
-    rcBox.left = 5;
-    rcBox.top = 5;
-    rcBox.right = 343;
-    rcBox.bottom = 463;
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    float scalingFactor = (float)dpi / 96;
+
+    rcBox.left = (int)(5 * scalingFactor);
+    rcBox.top = (int)(5 * scalingFactor);
+    rcBox.right = (int)(343 * scalingFactor);
+    rcBox.bottom = (int)(463 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_RAISED, BF_RECT);
 
-    rcBox.left = 8;
-    rcBox.top = 8;
-    rcBox.right = 340;
-    rcBox.bottom = 460;
+    rcBox.left = (int)(8 * scalingFactor);
+    rcBox.top = (int)(8 * scalingFactor);
+    rcBox.right = (int)(340 * scalingFactor);
+    rcBox.bottom = (int)(460 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
-    rcBox.left = 347;
-    rcBox.top = 7;
-    rcBox.right = 446;
-    rcBox.bottom = 42;
+    rcBox.left = (int)(347 * scalingFactor);
+    rcBox.top = (int)(7 * scalingFactor);
+    rcBox.right = (int)(446 * scalingFactor);
+    rcBox.bottom = (int)(42 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
-    rcBox.left = 352;
-    rcBox.top = 2;
-    rcBox.right = 400;
-    rcBox.bottom = 15;
+    rcBox.left = (int)(352 * scalingFactor);
+    rcBox.top = (int)(2 * scalingFactor);
+    rcBox.right = (int)(400 * scalingFactor);
+    rcBox.bottom = (int)(15 * scalingFactor);
     FillRect(ps.hdc, &rcBox, (HBRUSH)COLOR_WINDOW);
 
-    rcBox.left = 14;
-    rcBox.top = 14;
-    rcBox.right = 88;
-    rcBox.bottom = 32;
+    rcBox.left = (int)(14 * scalingFactor);
+    rcBox.top = (int)(14 * scalingFactor);
+    rcBox.right = (int)(88 * scalingFactor);
+    rcBox.bottom = (int)(32 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
-    rcBox.left = 86;
-    rcBox.top = 14;
-    rcBox.right = 173;
-    rcBox.bottom = 32;
+    rcBox.left = (int)(86 * scalingFactor);
+    rcBox.top = (int)(14 * scalingFactor);
+    rcBox.right = (int)(173 * scalingFactor);
+    rcBox.bottom = (int)(32 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
-    rcBox.left = 171;
-    rcBox.top = 14;
-    rcBox.right = 320;
-    rcBox.bottom = 32;
+    rcBox.left = (int)(171 * scalingFactor);
+    rcBox.top = (int)(14 * scalingFactor);
+    rcBox.right = (int)(320 * scalingFactor);
+    rcBox.bottom = (int)(32 * scalingFactor);
     DrawEdge(ps.hdc, &rcBox, EDGE_ETCHED, BF_RECT);
 
     hOldFont = (HFONT)SelectObject(ps.hdc, GetStockObject(DEFAULT_GUI_FONT));
     OldBkMode = SetBkMode(ps.hdc, TRANSPARENT);
 
-    TextOutA(ps.hdc, 23, 16, "Offset", 6);
-    TextOutA(ps.hdc, 97, 16, "Instruction", 11);
-    TextOutA(ps.hdc, 180, 16, "Arguments", 9);
-    TextOutA(ps.hdc, 354, 2, " Address ", 9);
-    TextOutA(ps.hdc, 358, 19, "0x1", 3);
+    TextOutA(ps.hdc, (int)(23 * scalingFactor), (int)(16 * scalingFactor), "Offset", 6);
+    TextOutA(ps.hdc, (int)(97 * scalingFactor), (int)(16 * scalingFactor), "Instruction", 11);
+    TextOutA(ps.hdc, (int)(180 * scalingFactor), (int)(16 * scalingFactor), "Arguments", 9);
+    TextOutA(ps.hdc, (int)(354 * scalingFactor), (int)(2 * scalingFactor), " Address ", 9);
+    TextOutA(ps.hdc, (int)(358 * scalingFactor), (int)(19 * scalingFactor), "0x1", 3);
 
     SelectObject(ps.hdc, hOldFont);
     SetBkMode(ps.hdc, OldBkMode);
@@ -727,83 +731,89 @@ LRESULT CALLBACK RSP_Commands_Proc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
 
 void RSP_Commands_Setup(HWND hDlg)
 {
-#define WindowWidth 457
-#define WindowHeight 494
+    // Get the current DPI
+    UINT dpi = GetDpiForWindow(hDlg);
+    float scalingFactor = (float)dpi / 96;
+
+    // Scale the window width and height based on the current DPI settings
+    int WindowWidth = (int)(457 * scalingFactor);
+    int WindowHeight = (int)(494 * scalingFactor);
+
     char Location[10];
     DWORD X, Y, WndPos;
 
-    hList = CreateWindowExA(WS_EX_STATICEDGE, "LISTBOX", "", WS_CHILD | WS_VISIBLE | LBS_OWNERDRAWFIXED | LBS_NOTIFY, 14, 30, 303, 445, hDlg,
+    hList = CreateWindowExA(WS_EX_STATICEDGE, "LISTBOX", "", WS_CHILD | WS_VISIBLE | LBS_OWNERDRAWFIXED | LBS_NOTIFY, (int)(14 * scalingFactor), (int)(30 * scalingFactor), (int)(303 * scalingFactor), (int)(445 * scalingFactor), hDlg,
                             (HMENU)IDC_LIST, (HINSTANCE)hinstDLL, NULL);
     if (hList)
     {
         SendMessage(hList, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
-        SendMessage(hList, LB_SETITEMHEIGHT, (WPARAM)0, (LPARAM)MAKELPARAM(14, 0));
+        SendMessage(hList, LB_SETITEMHEIGHT, (WPARAM)0, (LPARAM)MAKELPARAM((int)(14 * scalingFactor), 0));
     }
 
     sprintf(Location, "%03X", PrgCount ? *PrgCount : 0);
-    hAddress = CreateWindowExA(0, "EDIT", Location, WS_CHILD | ES_UPPERCASE | WS_VISIBLE | WS_BORDER | WS_TABSTOP, 375, 17, 36, 18, hDlg, (HMENU)IDC_ADDRESS, (HINSTANCE)hinstDLL, NULL);
+    hAddress = CreateWindowExA(0, "EDIT", Location, WS_CHILD | ES_UPPERCASE | WS_VISIBLE | WS_BORDER | WS_TABSTOP, (int)(375 * scalingFactor), (int)(17 * scalingFactor), (int)(36 * scalingFactor), (int)(18 * scalingFactor), hDlg, (HMENU)IDC_ADDRESS, (HINSTANCE)hinstDLL, NULL);
     if (hAddress)
     {
         SendMessage(hAddress, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
         SendMessage(hAddress, EM_SETLIMITTEXT, (WPARAM)3, (LPARAM)0);
     }
 
-    hFunctionlist = CreateWindowExA(0, "COMBOBOX", "", WS_CHILD | WS_VSCROLL | CBS_DROPDOWNLIST | CBS_SORT | WS_TABSTOP, 352, 56, 89, 150, hDlg,
+    hFunctionlist = CreateWindowExA(0, "COMBOBOX", "", WS_CHILD | WS_VSCROLL | CBS_DROPDOWNLIST | CBS_SORT | WS_TABSTOP, (int)(352 * scalingFactor), (int)(56 * scalingFactor), (int)(89 * scalingFactor), (int)(150 * scalingFactor), hDlg,
                                     (HMENU)IDC_FUNCTION_COMBO, (HINSTANCE)hinstDLL, NULL);
     if (hFunctionlist)
     {
         SendMessage(hFunctionlist, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
 
-    hGoButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Go", WS_CHILD | BS_DEFPUSHBUTTON | WS_VISIBLE | WS_TABSTOP, 347, 56, 100, 24, hDlg, (HMENU)IDC_GO_BUTTON,
+    hGoButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Go", WS_CHILD | BS_DEFPUSHBUTTON | WS_VISIBLE | WS_TABSTOP, (int)(347 * scalingFactor), (int)(56 * scalingFactor), (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg, (HMENU)IDC_GO_BUTTON,
                                 (HINSTANCE)hinstDLL, NULL);
     if (hGoButton)
     {
         SendMessage(hGoButton, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
 
-    hBreakButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Break", WS_DISABLED | WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, 347, 85, 100, 24, hDlg,
+    hBreakButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Break", WS_DISABLED | WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, (int)(347 * scalingFactor), (int)(85 * scalingFactor), (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg,
                                    (HMENU)IDC_BREAK_BUTTON, (HINSTANCE)hinstDLL, NULL);
     if (hBreakButton)
     {
         SendMessage(hBreakButton, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
 
-    hStepButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Step", WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, 347, 114, 100, 24, hDlg,
+    hStepButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Step", WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, (int)(347 * scalingFactor), (int)(114 * scalingFactor), (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg,
                                   (HMENU)IDC_STEP_BUTTON, (HINSTANCE)hinstDLL, NULL);
     if (hStepButton)
     {
         SendMessage(hStepButton, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
 
-    hSkipButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Skip", WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, 347, 143, 100, 24, hDlg,
+    hSkipButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Skip", WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, (int)(347 * scalingFactor), (int)(143 * scalingFactor), (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg,
                                   (HMENU)IDC_SKIP_BUTTON, (HINSTANCE)hinstDLL, NULL);
     if (hSkipButton)
     {
         SendMessage(hSkipButton, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
     }
 
-    WndPos = 324;
+    WndPos = (int)(324 * scalingFactor);
     if (DebugInfo.Enter_BPoint_Window == NULL)
     {
-        WndPos += 29;
+        WndPos += (int)(29 * scalingFactor);
     }
     if (DebugInfo.Enter_R4300i_Commands_Window == NULL)
     {
-        WndPos += 29;
+        WndPos += (int)(29 * scalingFactor);
     }
     if (DebugInfo.Enter_R4300i_Register_Window == NULL)
     {
-        WndPos += 29;
+        WndPos += (int)(29 * scalingFactor);
     }
     if (DebugInfo.Enter_Memory_Window == NULL)
     {
-        WndPos += 29;
+        WndPos += (int)(29 * scalingFactor);
     }
 
-    if (DebugInfo.Enter_BPoint_Window != NULL)
+if (DebugInfo.Enter_BPoint_Window != NULL)
     {
-        hBPButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Break Points", WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, 347, WndPos, 100, 24, hDlg,
+        hBPButton = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Break Points", WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, (int)(347 * scalingFactor), WndPos, (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg,
                                     (HMENU)IDC_BP_BUTTON, (HINSTANCE)hinstDLL, NULL);
         if (hBPButton)
         {
@@ -811,9 +821,9 @@ void RSP_Commands_Setup(HWND hDlg)
         }
     }
 
-    WndPos += 29;
+    WndPos += (int)(29 * scalingFactor);
     hRSPRegisters = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "RSP &Registers...",
-                                    WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, 347, WndPos, 100, 24, hDlg,
+                                    WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, (int)(347 * scalingFactor), WndPos, (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg,
                                     (HMENU)IDC_RSP_REGISTERS_BUTTON, (HINSTANCE)hinstDLL, NULL);
     if (hRSPRegisters)
     {
@@ -833,10 +843,22 @@ void RSP_Commands_Setup(HWND hDlg)
     }
 
     WndPos += 29;
+    if (DebugInfo.Enter_R4300i_Commands_Window != NULL)
+    {
+        hR4300iDebugger = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "R4300i &Debugger...",
+                                          WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, (int)(347 * scalingFactor), WndPos, (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg,
+                                          (HMENU)IDC_R4300I_DEBUGGER_BUTTON, (HINSTANCE)hinstDLL, NULL);
+        if (hR4300iDebugger)
+        {
+            SendMessage(hR4300iDebugger, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), 0);
+        }
+    }
+
+    WndPos += (int)(29 * scalingFactor);
     if (DebugInfo.Enter_R4300i_Register_Window != NULL)
     {
         hR4300iRegisters = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "R4300i R&egisters...",
-                                           WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, 347, WndPos, 100, 24, hDlg,
+                                           WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, (int)(347 * scalingFactor), WndPos, (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg,
                                            (HMENU)IDC_R4300I_REGISTERS_BUTTON, (HINSTANCE)hinstDLL, NULL);
         if (hR4300iRegisters)
         {
@@ -844,10 +866,10 @@ void RSP_Commands_Setup(HWND hDlg)
         }
     }
 
-    WndPos += 29;
+    WndPos += (int)(29 * scalingFactor);
     if (DebugInfo.Enter_Memory_Window != NULL)
     {
-        hMemory = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Memory...", WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, 347, WndPos, 100, 24, hDlg,
+        hMemory = CreateWindowExA(WS_EX_STATICEDGE, "BUTTON", "&Memory...", WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP | BS_TEXT, (int)(347 * scalingFactor), WndPos, (int)(100 * scalingFactor), (int)(24 * scalingFactor), hDlg,
                                   (HMENU)IDC_MEMORY_BUTTON, (HINSTANCE)hinstDLL, NULL);
         if (hMemory)
         {
@@ -855,7 +877,8 @@ void RSP_Commands_Setup(HWND hDlg)
         }
     }
 
-    hScrlBar = CreateWindowExA(WS_EX_STATICEDGE, "SCROLLBAR", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | SBS_VERT, 318, 14, 18, 439, hDlg, (HMENU)IDC_SCRL_BAR, (HINSTANCE)hinstDLL, NULL);
+    hScrlBar = CreateWindowExA(WS_EX_STATICEDGE, "SCROLLBAR", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | SBS_VERT, (int)(318 * scalingFactor), (int)(14 * scalingFactor), (int)(18 * scalingFactor), (int)(439 * scalingFactor), hDlg, (HMENU)IDC_SCRL_BAR,
+                               (HINSTANCE)hinstDLL, NULL);
 
     if (RSP_Running)
     {
@@ -866,7 +889,7 @@ void RSP_Commands_Setup(HWND hDlg)
         Disable_RSP_Commands_Window();
     }
 
-    //if ( !GetStoredWinPos("RSP Commands", &X, &Y ) ) {
+    // if (!GetStoredWinPos("RSP Commands", &X, &Y)) {
     X = (GetSystemMetrics(SM_CXSCREEN) - WindowWidth) / 2;
     Y = (GetSystemMetrics(SM_CYSCREEN) - WindowHeight) / 2;
     //}
