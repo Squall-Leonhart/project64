@@ -5916,9 +5916,9 @@ void Compile_Vector_VRSQH(void)
     el = EleSpec[RSPOpC.e].B[(RSPOpC.rd & 0x7)];
     sprintf(Reg, "RSP_Vect[%i].UHW[%i]", RSPOpC.rt, el);
     MoveVariableToX86regHalf(&RSP_Vect[RSPOpC.vt].u16(el), Reg, x86_EDX);
-    MoveX86regHalfToVariable(x86_EDX, &SQroot.UHW[1], "SQroot.UHW[1]");
+    MoveX86regHalfToVariable(x86_EDX, &RcpIn, "RcpIn");
 
-    MoveVariableToX86regHalf(&SQrootResult.UHW[1], "SQrootResult.UHW[1]", x86_ECX);
+    MoveVariableToX86regHalf(&RcpResult, "RcpResult", x86_ECX);
 
     if (bWriteToAccum != false)
     {
