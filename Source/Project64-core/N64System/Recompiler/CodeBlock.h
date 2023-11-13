@@ -13,7 +13,7 @@ class CCodeBlock :
     public asmjit::ErrorHandler
 {
 public:
-    CCodeBlock(CMipsMemoryVM & MMU, CRegisters & Reg, uint32_t VAddrEnter);
+    CCodeBlock(CN64System & System, uint32_t VAddrEnter);
     ~CCodeBlock();
 
     bool Compile();
@@ -54,6 +54,10 @@ public:
     CRecompilerOps *& RecompilerOps()
     {
         return m_RecompilerOps;
+    }
+    CRegisters & Registers()
+    {
+        return m_Reg;
     }
     const std::string & CodeLog() const
     {
@@ -116,6 +120,7 @@ private:
     typedef std::list<CCodeSection *> SectionList;
 
     CMipsMemoryVM & m_MMU;
+    CRegisters & m_Reg;
     SectionMap m_SectionMap;
     SectionList m_Sections;
     CCodeSection * m_EnterSection;

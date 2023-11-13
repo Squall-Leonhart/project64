@@ -19,6 +19,34 @@
 #pragma warning(push)
 #pragma warning(disable : 4201) // Non-standard extension used: nameless struct/union
 
+union COP0EntryLo
+{
+    uint64_t Value;
+
+    struct
+    {
+        uint64_t GLOBAL : 1;
+        uint64_t V : 1;
+        uint64_t D : 1;
+        uint64_t C : 3;
+        uint64_t PFN : 28;
+        uint64_t : 28;
+        uint64_t UC : 2;
+    };
+};
+
+union COP0PageMask
+{
+    uint64_t Value;
+
+    struct
+    {
+        uint64_t : 13;
+        uint64_t Mask : 12;
+        uint64_t : 39;
+    };
+};
+
 union COP0EntryHi
 {
     uint64_t Value;
@@ -96,10 +124,10 @@ union COP0Context
 
     struct
     {
-        unsigned : 4;
-        unsigned BadVPN2 : 19;
-        unsigned PTEBaseHi : 9;
-        unsigned PTEBaseLo : 32;
+        uint64_t : 4;
+        uint64_t BadVPN2 : 19;
+        uint64_t PTEBaseHi : 9;
+        uint64_t PTEBaseLo : 32;
     };
 };
 
@@ -182,10 +210,10 @@ protected:
 public:
     uint64_t & INDEX_REGISTER;
     uint64_t & RANDOM_REGISTER;
-    uint64_t & ENTRYLO0_REGISTER;
-    uint64_t & ENTRYLO1_REGISTER;
+    COP0EntryLo & ENTRYLO0_REGISTER;
+    COP0EntryLo & ENTRYLO1_REGISTER;
     COP0Context & CONTEXT_REGISTER;
-    uint64_t & PAGE_MASK_REGISTER;
+    COP0PageMask & PAGE_MASK_REGISTER;
     uint64_t & WIRED_REGISTER;
     uint64_t & BAD_VADDR_REGISTER;
     uint64_t & COUNT_REGISTER;
@@ -390,21 +418,6 @@ public:
     static const char * FPR_Ctrl[32];
 };
 
-class CSystemRegisters
-{
-protected:
-    static uint32_t * _PROGRAM_COUNTER;
-    static MIPS_DWORD * _GPR;
-    static MIPS_DWORD * _FPR;
-    static uint64_t * _CP0;
-    static MIPS_DWORD * _RegHI;
-    static MIPS_DWORD * _RegLO;
-    static float ** _FPR_S;
-    static double ** _FPR_D;
-    static uint32_t * _FPCR;
-    static uint32_t * _LLBit;
-};
-
 class CN64System;
 class CSystemEvents;
 class CTLB;
@@ -413,7 +426,6 @@ class CRegisters :
     public CLogging,
     private CDebugSettings,
     private CGameSettings,
-    protected CSystemRegisters,
     public CP0registers,
     public RDRAMRegistersReg,
     public MIPSInterfaceReg,
@@ -468,12 +480,9 @@ public:
     void CheckInterrupts();
     void DoAddressError(uint64_t BadVaddr, bool FromRead);
     bool DoIntrException();
-    void DoTLBReadMiss(uint64_t BadVaddr);
-    void DoTLBWriteMiss(uint64_t BadVaddr);
     void FixFpuLocations();
     void Reset(bool bPostPif, CMipsMemoryVM & MMU);
-    void SetAsCurrentSystem();
-    void TriggerAddressException(uint64_t Address, uint32_t ExceptionCode, bool SpecialOffset = false);
+    void TriggerAddressException(uint64_t Address, uint32_t ExceptionCode);
     void TriggerException(uint32_t ExceptionCode, uint32_t Coprocessor = 0);
 
     uint64_t Cop0_MF(COP0Reg Reg);
@@ -495,7 +504,10 @@ public:
     // Floating point registers/information
     uint32_t m_FPCR[32];
     MIPS_DWORD m_FPR[32];
+    uint32_t * m_FPR_UW[32];
+    uint64_t * m_FPR_UDW[32];
     float * m_FPR_S[32];
+    float * m_FPR_S_L[32];
     double * m_FPR_D[32];
 
     // Memory-mapped N64 registers

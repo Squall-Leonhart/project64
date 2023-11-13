@@ -37,8 +37,6 @@ enum CN64SystemCB
 
 class CN64System :
     public CLogging,
-    public CTLB_CB,
-    private CSystemEvents,
     protected CN64SystemSettings,
     public CGameSettings,
     protected CDebugSettings
@@ -85,6 +83,10 @@ public:
     int GetBaseSpeed(void) const
     {
         return m_Limiter.GetBaseSpeed();
+    }
+    R4300iOpcode Opcode(void) const
+    {
+        return m_OpCodes.Opcode();
     }
     void Reset(bool bInitReg, bool ClearMenory);
     void GameReset();
@@ -136,17 +138,15 @@ private:
     friend class CRSP_Plugin;
     friend class CControl_Plugin;
 
-    // Recompiler has access to manipulate and call functions
     friend class CSystemTimer;
     friend class CRecompiler;
+    friend class CRecompilerOpsBase;
     friend class CX86RecompilerOps;
     friend class CArmRecompilerOps;
+    friend class CCodeBlock;
     friend class CMipsMemoryVM;
-    friend class CInterpreterCPU;
-    friend class R4300iOp32;
     friend class R4300iOp;
     friend class CSystemEvents;
-
     friend class VideoInterfaceHandler;
     friend class PifRamHandler;
     friend class CRegisters;
@@ -174,17 +174,17 @@ private:
     void CpuStopped();
 
     // Functions in CTLB_CB
-    void TLB_Mapped(uint32_t VAddr, uint32_t Len, uint32_t PAddr, bool bReadOnly);
     void TLB_Unmaped(uint32_t VAddr, uint32_t Len);
-    void TLB_Changed();
 
     SETTING_CALLBACK m_Callback;
     CPlugins * const m_Plugins; // The plugin container
     CPlugins * m_SyncPlugins;
     CN64System * m_SyncCPU;
+    CSystemEvents m_SystemEvents;
     CMipsMemoryVM m_MMU_VM;
     CRegisters m_Reg;
     CTLB m_TLB;
+    R4300iOp m_OpCodes;
     CMempak m_Mempak;
     CFramePerSecond m_FPS;
     CProfiling m_CPU_Usage; // Used to track the CPU usage
@@ -219,7 +219,8 @@ private:
     FUNC_CALLS m_FunctionCalls;
 
     // List of save state file IDs
-    const uint32_t SaveID_0 = 0x23D8A6C8; // Main save state info (*.pj)
-    const uint32_t SaveID_1 = 0x56D2CD23; // Extra data v1 (system timing) info (*.dat)
-    const uint32_t SaveID_2 = 0x750A6BEB; // Extra data v2 (timing + disk registers) (*.dat)
+    const uint32_t SaveID_0 = 0x23D8A6C8;   // Main save state info (*.pj)
+    const uint32_t SaveID_0_1 = 0x25EF3FAC; // Main save state info (*.pj)
+    const uint32_t SaveID_1 = 0x56D2CD23;   // Extra data v1 (system timing) info (*.dat)
+    const uint32_t SaveID_2 = 0x750A6BEB;   // Extra data v2 (timing + disk registers) (*.dat)
 };

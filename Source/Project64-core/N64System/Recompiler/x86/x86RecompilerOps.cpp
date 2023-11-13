@@ -4,7 +4,6 @@
 
 #include <Project64-core/Debugger.h>
 #include <Project64-core/ExceptionHandler.h>
-#include <Project64-core/N64System/Interpreter/InterpreterCPU.h>
 #include <Project64-core/N64System/Interpreter/InterpreterOps.h>
 #include <Project64-core/N64System/Mips/Disk.h>
 #include <Project64-core/N64System/Mips/MemoryVirtualMem.h>
@@ -50,14 +49,14 @@ void CX86RecompilerOps::x86CompilerBreakPoint()
             uint32_t OpcodeValue;
             if (!g_MMU->MemoryValue32(g_Reg->m_PROGRAM_COUNTER, OpcodeValue))
             {
-                g_Reg->DoTLBReadMiss(g_Reg->m_PROGRAM_COUNTER);
+                g_Reg->TriggerAddressException(g_Reg->m_PROGRAM_COUNTER, EXC_RMISS);
                 g_Reg->m_PROGRAM_COUNTER = g_System->JumpToLocation();
                 g_System->m_PipelineStage = PIPELINE_STAGE_NORMAL;
                 continue;
             }
             continue;
         }
-        CInterpreterCPU::ExecuteOps(g_System->CountPerOp());
+        g_System->m_OpCodes.ExecuteOps(g_System->CountPerOp());
         if (g_SyncSystem)
         {
             g_System->UpdateSyncCPU(g_SyncSystem, g_System->CountPerOp());
@@ -68,7 +67,7 @@ void CX86RecompilerOps::x86CompilerBreakPoint()
 
     if (g_System->PipelineStage() != PIPELINE_STAGE_NORMAL)
     {
-        CInterpreterCPU::ExecuteOps(g_System->CountPerOp());
+        g_System->m_OpCodes.ExecuteOps(g_System->CountPerOp());
         if (g_SyncSystem)
         {
             g_System->UpdateSyncCPU(g_SyncSystem, g_System->CountPerOp());
@@ -79,7 +78,7 @@ void CX86RecompilerOps::x86CompilerBreakPoint()
 
 void CX86RecompilerOps::x86BreakPointDelaySlot()
 {
-    CInterpreterCPU::ExecuteOps(g_System->CountPerOp());
+    g_System->m_OpCodes.ExecuteOps(g_System->CountPerOp());
     if (g_SyncSystem)
     {
         g_System->UpdateSyncCPU(g_SyncSystem, g_System->CountPerOp());
@@ -91,7 +90,7 @@ void CX86RecompilerOps::x86BreakPointDelaySlot()
     }
     if (g_System->PipelineStage() != PIPELINE_STAGE_NORMAL)
     {
-        CInterpreterCPU::ExecuteOps(g_System->CountPerOp());
+        g_System->m_OpCodes.ExecuteOps(g_System->CountPerOp());
         if (g_SyncSystem)
         {
             g_System->UpdateSyncCPU(g_SyncSystem, g_System->CountPerOp());
@@ -111,7 +110,7 @@ void CX86RecompilerOps::x86MemoryBreakPoint()
     {
         g_Reg->m_PROGRAM_COUNTER -= 4;
         *g_NextTimer += g_System->CountPerOp();
-        CInterpreterCPU::ExecuteOps(g_System->CountPerOp());
+        g_System->m_OpCodes.ExecuteOps(g_System->CountPerOp());
     }
     x86CompilerBreakPoint();
 }
@@ -180,8 +179,8 @@ void CX86RecompilerOps::x86TestWriteBreakPoint64()
     }
 }
 
-CX86RecompilerOps::CX86RecompilerOps(CMipsMemoryVM & MMU, CRegisters & Reg, CCodeBlock & CodeBlock) :
-    CRecompilerOpsBase(MMU, Reg, CodeBlock),
+CX86RecompilerOps::CX86RecompilerOps(CN64System & m_System, CCodeBlock & CodeBlock) :
+    CRecompilerOpsBase(m_System, CodeBlock),
     m_Assembler(CodeBlock),
     m_RegWorkingSet(CodeBlock, m_Assembler),
     m_CompilePC(0),
@@ -381,51 +380,51 @@ void CX86RecompilerOps::Compile_TrapCompare(RecompilerTrapCompare CompareType)
     switch (CompareType)
     {
     case RecompilerTrapCompare_TEQ:
-        FunctAddress = (uint32_t)R4300iOp::SPECIAL_TEQ;
+        FunctAddress = AddressOf(&R4300iOp::SPECIAL_TEQ);
         FunctName = "R4300iOp::SPECIAL_TEQ";
         break;
     case RecompilerTrapCompare_TNE:
-        FunctAddress = (uint32_t)R4300iOp::SPECIAL_TNE;
+        FunctAddress = AddressOf(&R4300iOp::SPECIAL_TNE);
         FunctName = "R4300iOp::SPECIAL_TNE";
         break;
     case RecompilerTrapCompare_TGE:
-        FunctAddress = (uint32_t)R4300iOp::SPECIAL_TGE;
+        FunctAddress = AddressOf(&R4300iOp::SPECIAL_TGE);
         FunctName = "R4300iOp::SPECIAL_TGE";
         break;
     case RecompilerTrapCompare_TGEU:
-        FunctAddress = (uint32_t)R4300iOp::SPECIAL_TGEU;
+        FunctAddress = AddressOf(&R4300iOp::SPECIAL_TGEU);
         FunctName = "R4300iOp::SPECIAL_TGEU";
         break;
     case RecompilerTrapCompare_TLT:
-        FunctAddress = (uint32_t)R4300iOp::SPECIAL_TLT;
+        FunctAddress = AddressOf(&R4300iOp::SPECIAL_TLT);
         FunctName = "R4300iOp::SPECIAL_TLT";
         break;
     case RecompilerTrapCompare_TLTU:
-        FunctAddress = (uint32_t)R4300iOp::SPECIAL_TLTU;
+        FunctAddress = AddressOf(&R4300iOp::SPECIAL_TLTU);
         FunctName = "R4300iOp::SPECIAL_TLTU";
         break;
     case RecompilerTrapCompare_TEQI:
-        FunctAddress = (uint32_t)R4300iOp::REGIMM_TEQI;
+        FunctAddress = AddressOf(&R4300iOp::REGIMM_TEQI);
         FunctName = "R4300iOp::REGIMM_TEQI";
         break;
     case RecompilerTrapCompare_TNEI:
-        FunctAddress = (uint32_t)R4300iOp::REGIMM_TNEI;
+        FunctAddress = AddressOf(&R4300iOp::REGIMM_TNEI);
         FunctName = "R4300iOp::REGIMM_TNEI";
         break;
     case RecompilerTrapCompare_TGEI:
-        FunctAddress = (uint32_t)R4300iOp::REGIMM_TGEI;
+        FunctAddress = AddressOf(&R4300iOp::REGIMM_TGEI);
         FunctName = "R4300iOp::REGIMM_TGEI";
         break;
     case RecompilerTrapCompare_TGEIU:
-        FunctAddress = (uint32_t)R4300iOp::REGIMM_TGEIU;
+        FunctAddress = AddressOf(&R4300iOp::REGIMM_TGEIU);
         FunctName = "R4300iOp::REGIMM_TGEIU";
         break;
     case RecompilerTrapCompare_TLTI:
-        FunctAddress = (uint32_t)R4300iOp::REGIMM_TLTI;
+        FunctAddress = AddressOf(&R4300iOp::REGIMM_TLTI);
         FunctName = "R4300iOp::REGIMM_TLTI";
         break;
     case RecompilerTrapCompare_TLTIU:
-        FunctAddress = (uint32_t)R4300iOp::REGIMM_TLTIU;
+        FunctAddress = AddressOf(&R4300iOp::REGIMM_TLTIU);
         FunctName = "R4300iOp::REGIMM_TLTIU";
         break;
     default:
@@ -443,7 +442,8 @@ void CX86RecompilerOps::Compile_TrapCompare(RecompilerTrapCompare CompareType)
             m_RegWorkingSet.UnMap_GPR(m_Opcode.rt, true);
         }
         m_RegWorkingSet.BeforeCallDirect();
-        m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+        m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+        m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, FunctAddress, FunctName, 4);
         m_Assembler.CallFunc(FunctAddress, FunctName);
         m_RegWorkingSet.AfterCallDirect();
     }
@@ -2909,8 +2909,8 @@ void CX86RecompilerOps::LDL()
     }
 
     m_RegWorkingSet.BeforeCallDirect();
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::LDL, "R4300iOp::LDL");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::LDL), "R4300iOp::LDL", 4);
     m_RegWorkingSet.AfterCallDirect();
 }
 
@@ -2927,8 +2927,8 @@ void CX86RecompilerOps::LDR()
     }
 
     m_RegWorkingSet.BeforeCallDirect();
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::LDR, "R4300iOp::LDR");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::LDR), "R4300iOp::LDR", 4);
     m_RegWorkingSet.AfterCallDirect();
 }
 
@@ -3337,8 +3337,8 @@ void CX86RecompilerOps::LW_KnownAddress(const asmjit::x86::Gp & Reg, uint32_t VA
                 default:
                     m_RegWorkingSet.BeforeCallDirect();
                     m_Assembler.PushImm32("m_TempValue32", (uint32_t)&m_TempValue32);
-                    m_Assembler.push(PAddr | 0xA0000000);
-                    m_Assembler.CallThis((uint32_t)(g_MMU), AddressOf(&CMipsMemoryVM::LW_NonMemory), "CMipsMemoryVM::LW_NonMemory", 12);
+                    m_Assembler.push(PAddr);
+                    m_Assembler.CallThis((uint32_t)(g_MMU), AddressOf(&CMipsMemoryVM::LW_PhysicalAddress), "CMipsMemoryVM::LW_PhysicalAddress", 12);
                     m_RegWorkingSet.AfterCallDirect();
                     m_Assembler.MoveVariableToX86reg(Reg, &m_TempValue32, "m_TempValue32");
                     break;
@@ -3348,8 +3348,8 @@ void CX86RecompilerOps::LW_KnownAddress(const asmjit::x86::Gp & Reg, uint32_t VA
         case 0x04100000:
             m_RegWorkingSet.BeforeCallDirect();
             m_Assembler.PushImm32("m_TempValue32", (uint32_t)&m_TempValue32);
-            m_Assembler.push(PAddr | 0xA0000000);
-            m_Assembler.CallThis((uint32_t)(g_MMU), AddressOf(&CMipsMemoryVM::LW_NonMemory), "CMipsMemoryVM::LW_NonMemory", 12);
+            m_Assembler.push(PAddr);
+            m_Assembler.CallThis((uint32_t)(g_MMU), AddressOf(&CMipsMemoryVM::LW_PhysicalAddress), "CMipsMemoryVM::LW_PhysicalAddress", 12);
             m_RegWorkingSet.AfterCallDirect();
             m_Assembler.MoveVariableToX86reg(Reg, &m_TempValue32, "m_TempValue32");
             break;
@@ -3944,8 +3944,8 @@ void CX86RecompilerOps::SDL()
     }
 
     m_RegWorkingSet.BeforeCallDirect();
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::SDL, "R4300iOp::SDL");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::SDL), "R4300iOp::SDL", 4);
     m_RegWorkingSet.AfterCallDirect();
 }
 
@@ -3962,8 +3962,8 @@ void CX86RecompilerOps::SDR()
     }
 
     m_RegWorkingSet.BeforeCallDirect();
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::SDR, "R4300iOp::SDR");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::SDR), "R4300iOp::SDR", 4);
     m_RegWorkingSet.AfterCallDirect();
 }
 
@@ -4002,7 +4002,7 @@ void CX86RecompilerOps::LWC1()
         LW_KnownAddress(TempReg1, Address);
 
         asmjit::x86::Gp TempReg2 = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-        m_Assembler.MoveVariableToX86reg(TempReg2, &m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("_FPR_S[%d]", m_Opcode.ft).c_str());
+        m_Assembler.MoveVariableToX86reg(TempReg2, &m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("m_FPR_S[%d]", m_Opcode.ft).c_str());
         m_Assembler.mov(asmjit::x86::dword_ptr(TempReg2), TempReg1);
         return;
     }
@@ -4010,7 +4010,7 @@ void CX86RecompilerOps::LWC1()
     asmjit::x86::Gp ValueReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
     CompileLoadMemoryValue(x86Reg_Unknown, ValueReg, x86Reg_Unknown, 32, false);
     asmjit::x86::Gp FPR_SPtr = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-    m_Assembler.MoveVariableToX86reg(FPR_SPtr, &m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("_FPR_S[%d]", m_Opcode.ft).c_str());
+    m_Assembler.MoveVariableToX86reg(FPR_SPtr, &m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("m_FPR_S[%d]", m_Opcode.ft).c_str());
     m_Assembler.mov(asmjit::x86::dword_ptr(FPR_SPtr), ValueReg);
 }
 
@@ -4036,7 +4036,7 @@ void CX86RecompilerOps::LDC1()
         m_Assembler.mov(asmjit::x86::dword_ptr(TempReg2), TempReg1);
 
         LW_KnownAddress(TempReg1, Address + 4);
-        m_Assembler.MoveVariableToX86reg(TempReg2, &m_Reg.m_FPR_D[m_Opcode.ft], stdstr_f("_FPR_S[%d]", m_Opcode.ft).c_str());
+        m_Assembler.MoveVariableToX86reg(TempReg2, &m_Reg.m_FPR_D[m_Opcode.ft], stdstr_f("m_FPR_S[%d]", m_Opcode.ft).c_str());
         m_Assembler.mov(asmjit::x86::dword_ptr(TempReg2), TempReg1);
     }
     else
@@ -4123,7 +4123,7 @@ void CX86RecompilerOps::SWC1()
 
         m_RegWorkingSet.UnMap_FPR(m_Opcode.ft, true);
         asmjit::x86::Gp TempReg1 = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-        m_Assembler.MoveVariableToX86reg(TempReg1, &m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("_FPR_S[%d]", m_Opcode.ft).c_str());
+        m_Assembler.MoveVariableToX86reg(TempReg1, &m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("m_FPR_S[%d]", m_Opcode.ft).c_str());
         m_Assembler.mov(TempReg1, asmjit::x86::dword_ptr(TempReg1));
         SW_Register(TempReg1, Address);
         return;
@@ -4131,7 +4131,7 @@ void CX86RecompilerOps::SWC1()
     PreWriteInstruction();
     m_RegWorkingSet.UnMap_FPR(m_Opcode.ft, true);
     asmjit::x86::Gp ValueReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-    m_Assembler.MoveVariableToX86reg(ValueReg, &m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("_FPR_S[%d]", m_Opcode.ft).c_str());
+    m_Assembler.MoveVariableToX86reg(ValueReg, &m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("m_FPR_S[%d]", m_Opcode.ft).c_str());
     m_Assembler.mov(ValueReg, asmjit::x86::dword_ptr(ValueReg));
 
     CompileStoreMemoryValue(x86Reg_Unknown, ValueReg, x86Reg_Unknown, 0, 32);
@@ -5198,8 +5198,8 @@ void CX86RecompilerOps::SPECIAL_DMULT()
     }
 
     m_RegWorkingSet.BeforeCallDirect();
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::SPECIAL_DMULT, "R4300iOp::SPECIAL_DMULT");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::SPECIAL_DMULT), "R4300iOp::SPECIAL_DMULT", 4);
     m_RegWorkingSet.AfterCallDirect();
 }
 
@@ -5208,8 +5208,8 @@ void CX86RecompilerOps::SPECIAL_DMULTU()
     m_RegWorkingSet.UnMap_GPR(m_Opcode.rs, true);
     m_RegWorkingSet.UnMap_GPR(m_Opcode.rt, true);
     m_RegWorkingSet.BeforeCallDirect();
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::SPECIAL_DMULTU, "R4300iOp::SPECIAL_DMULTU");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::SPECIAL_DMULTU), "R4300iOp::SPECIAL_DMULTU", 4);
     m_RegWorkingSet.AfterCallDirect();
 }
 
@@ -5218,8 +5218,8 @@ void CX86RecompilerOps::SPECIAL_DDIV()
     m_RegWorkingSet.UnMap_GPR(m_Opcode.rs, true);
     m_RegWorkingSet.UnMap_GPR(m_Opcode.rt, true);
     m_RegWorkingSet.BeforeCallDirect();
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::SPECIAL_DDIV, "R4300iOp::SPECIAL_DDIV");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::SPECIAL_DDIV), "R4300iOp::SPECIAL_DDIV", 4);
     m_RegWorkingSet.AfterCallDirect();
 }
 
@@ -5228,8 +5228,8 @@ void CX86RecompilerOps::SPECIAL_DDIVU()
     m_RegWorkingSet.UnMap_GPR(m_Opcode.rs, true);
     m_RegWorkingSet.UnMap_GPR(m_Opcode.rt, true);
     m_RegWorkingSet.BeforeCallDirect();
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::SPECIAL_DDIVU, "R4300iOp::SPECIAL_DDIVU");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::SPECIAL_DDIVU), "R4300iOp::SPECIAL_DDIVU", 4);
     m_RegWorkingSet.AfterCallDirect();
 }
 
@@ -7466,7 +7466,7 @@ void CX86RecompilerOps::COP1_MF()
     m_RegWorkingSet.UnMap_FPR(m_Opcode.fs, true);
     m_RegWorkingSet.Map_GPR_32bit(m_Opcode.rt, true, -1);
     asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-    m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[m_Opcode.fs], stdstr_f("_FPR_S[%d]", m_Opcode.fs).c_str());
+    m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[m_Opcode.fs], stdstr_f("m_FPR_S[%d]", m_Opcode.fs).c_str());
     m_Assembler.mov(m_RegWorkingSet.GetMipsRegMapLo(m_Opcode.rt), asmjit::x86::dword_ptr(TempReg));
 }
 
@@ -7511,7 +7511,7 @@ void CX86RecompilerOps::COP1_MT()
     }
     m_RegWorkingSet.UnMap_FPR(m_Opcode.fs, true);
     asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-    m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[m_Opcode.fs], stdstr_f("_FPR_S[%d]", m_Opcode.fs).c_str());
+    m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[m_Opcode.fs], stdstr_f("m_FPR_S[%d]", m_Opcode.fs).c_str());
 
     if (m_RegWorkingSet.IsConst(m_Opcode.rt))
     {
@@ -7647,7 +7647,7 @@ void CX86RecompilerOps::COP1_S_ADD()
         {
             m_RegWorkingSet.UnMap_FPR(Reg2, true);
             asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-            m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("_FPR_S[%d]", Reg2).c_str());
+            m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("m_FPR_S[%d]", Reg2).c_str());
             m_RegWorkingSet.Load_FPR_ToTop(m_Opcode.fd, m_Opcode.fd, CRegInfo::FPU_Float);
             m_Assembler.fadd(asmjit::x86::dword_ptr(TempReg));
         }
@@ -7693,7 +7693,7 @@ void CX86RecompilerOps::COP1_S_SUB()
             m_RegWorkingSet.Load_FPR_ToTop(m_Opcode.fd, m_Opcode.fs, CRegInfo::FPU_Float);
 
             asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-            m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("_FPR_S[%d]", m_Opcode.ft).c_str());
+            m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("m_FPR_S[%d]", m_Opcode.ft).c_str());
             m_Assembler.fsub(asmjit::x86::dword_ptr(TempReg));
         }
         else
@@ -7709,7 +7709,7 @@ void CX86RecompilerOps::COP1_S_SUB()
                 m_RegWorkingSet.Load_FPR_ToTop(m_Opcode.fd, m_Opcode.fd, CRegInfo::FPU_Float);
 
                 asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-                m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("_FPR_S[%d]", Reg2).c_str());
+                m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("m_FPR_S[%d]", Reg2).c_str());
                 m_Assembler.fsub(asmjit::x86::dword_ptr(TempReg));
             }
         }
@@ -7760,7 +7760,7 @@ void CX86RecompilerOps::COP1_S_MUL()
             m_RegWorkingSet.Load_FPR_ToTop(m_Opcode.fd, m_Opcode.fd, CRegInfo::FPU_Float);
 
             asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-            m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("_FPR_S[%d]", Reg2).c_str());
+            m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("m_FPR_S[%d]", Reg2).c_str());
             m_Assembler.fmul(asmjit::x86::dword_ptr(TempReg));
         }
         m_RegWorkingSet.UnMap_FPR(m_Opcode.fd, true);
@@ -7781,7 +7781,7 @@ void CX86RecompilerOps::COP1_S_DIV()
         m_RegWorkingSet.Load_FPR_ToTop(m_Opcode.fd, m_Opcode.fs, CRegInfo::FPU_Float);
 
         asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-        m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("_FPR_S[%d]", m_Opcode.ft).c_str());
+        m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[m_Opcode.ft], stdstr_f("m_FPR_S[%d]", m_Opcode.ft).c_str());
         m_Assembler.fdiv(asmjit::x86::dword_ptr(TempReg));
     }
     else
@@ -7797,7 +7797,7 @@ void CX86RecompilerOps::COP1_S_DIV()
             m_RegWorkingSet.Load_FPR_ToTop(m_Opcode.fd, m_Opcode.fd, CRegInfo::FPU_Float);
 
             asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-            m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("_FPR_S[%d]", Reg2).c_str());
+            m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("m_FPR_S[%d]", Reg2).c_str());
             m_Assembler.fdiv(asmjit::x86::dword_ptr(TempReg));
         }
     }
@@ -7987,7 +7987,7 @@ void CX86RecompilerOps::COP1_S_CMP()
         m_RegWorkingSet.Load_FPR_ToTop(Reg1, Reg1, CRegInfo::FPU_Float);
 
         asmjit::x86::Gp TempReg = m_RegWorkingSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-        m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("_FPR_S[%d]", Reg2).c_str());
+        m_Assembler.MoveVariableToX86reg(TempReg, (uint8_t *)&m_Reg.m_FPR_S[Reg2], stdstr_f("m_FPR_S[%d]", Reg2).c_str());
         m_Assembler.fcom(asmjit::x86::dword_ptr(TempReg));
     }
     m_Assembler.AndConstToVariable(&m_Reg.m_FPCR[31], "_FPCR[31]", (uint32_t)~FPCSR_C);
@@ -8441,8 +8441,8 @@ void CX86RecompilerOps::UnknownOpcode()
     }
     m_RegWorkingSet.SetBlockCycleCount(m_RegWorkingSet.GetBlockCycleCount() - g_System->CountPerOp());
 
-    m_Assembler.MoveConstToVariable(&R4300iOp::m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::UnknownOpcode, "R4300iOp::UnknownOpcode");
+    m_Assembler.MoveConstToVariable(&g_System->m_OpCodes.m_Opcode.Value, "R4300iOp::m_Opcode.Value", m_Opcode.Value);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::UnknownOpcode), "R4300iOp::UnknownOpcode", 4);
     m_Assembler.ret();
     if (m_PipelineStage == PIPELINE_STAGE_NORMAL)
     {
@@ -8583,7 +8583,7 @@ void CX86RecompilerOps::CompileCheckFPUInput32(asmjit::x86::Gp RegPointer)
     m_Assembler.MoveConstToVariable(&g_System->m_PipelineStage, "System->m_PipelineStage", m_PipelineStage == PIPELINE_STAGE_JUMP || m_PipelineStage == PIPELINE_STAGE_DELAY_SLOT ? PIPELINE_STAGE_JUMP : PIPELINE_STAGE_NORMAL);
     m_Assembler.MoveConstToVariable(&m_Reg.m_PROGRAM_COUNTER, "PROGRAM_COUNTER", m_CompilePC);
     m_Assembler.PushImm32("m_TempValue32", (uint32_t)&m_TempValue32);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::CheckFPUInput32, "R4300iOp::CheckFPUInput32");
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::CheckFPUInput32), "R4300iOp::CheckFPUInput32", 4);
     m_Assembler.add(asmjit::x86::esp, 4);
     m_Assembler.test(asmjit::x86::al, asmjit::x86::al);
     m_RegWorkingSet.AfterCallDirect();
@@ -8620,7 +8620,7 @@ void CX86RecompilerOps::CompileCheckFPUResult32(int32_t DestReg)
     m_Assembler.MoveConstToVariable(&g_System->m_PipelineStage, "System->m_PipelineStage", m_PipelineStage == PIPELINE_STAGE_JUMP || m_PipelineStage == PIPELINE_STAGE_DELAY_SLOT ? PIPELINE_STAGE_JUMP : PIPELINE_STAGE_NORMAL);
     m_Assembler.MoveConstToVariable(&m_Reg.m_PROGRAM_COUNTER, "PROGRAM_COUNTER", m_CompilePC);
     m_Assembler.PushImm32("Result", (uint32_t)&m_TempValue32);
-    m_Assembler.CallFunc((uint32_t)R4300iOp::CheckFPUResult32, "R4300iOp::CheckFPUResult32");
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::CheckFPUResult32), "R4300iOp::CheckFPUResult32", 4);
     m_Assembler.add(asmjit::x86::esp, 4);
     m_Assembler.test(asmjit::x86::al, asmjit::x86::al);
     m_RegWorkingSet.AfterCallDirect();
@@ -8646,7 +8646,7 @@ void CX86RecompilerOps::CompileCheckFPUResult32(int32_t DestReg)
     }
     m_Assembler.MoveVariableToX86reg(TempReg, &m_TempValue32, "TempValue32");
     asmjit::x86::Gp TempRegFPR_S = ExitRegSet.Map_TempReg(x86Reg_Unknown, -1, false, false);
-    m_Assembler.MoveVariableToX86reg(TempRegFPR_S, &m_Reg.m_FPR_S[DestReg], stdstr_f("_FPR_S[%d]", DestReg).c_str());
+    m_Assembler.MoveVariableToX86reg(TempRegFPR_S, &m_Reg.m_FPR_S[DestReg], stdstr_f("m_FPR_S[%d]", DestReg).c_str());
     m_Assembler.mov(asmjit::x86::dword_ptr(TempRegFPR_S), TempReg);
     ExitRegSet.SetBlockCycleCount(ExitRegSet.GetBlockCycleCount() + g_System->CountPerOp());
     CompileExit(m_CompilePC + 4, m_CompilePC + 4, ExitRegSet, ExitReason_Normal, false, &CX86Ops::JmpLabel);
@@ -8689,7 +8689,7 @@ void CX86RecompilerOps::CompileInPermLoop(CRegInfo & RegSet, uint32_t ProgramCou
     m_Assembler.MoveConstToVariable(&m_Reg.m_PROGRAM_COUNTER, "PROGRAM_COUNTER", ProgramCounter);
     RegSet.WriteBackRegisters();
     UpdateCounters(RegSet, false, true, false);
-    m_Assembler.CallFunc(AddressOf(CInterpreterCPU::InPermLoop), "CInterpreterCPU::InPermLoop");
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::InPermLoop), "R4300iOp::InPermLoop", 4);
     m_Assembler.CallThis((uint32_t)g_SystemTimer, AddressOf(&CSystemTimer::TimerDone), "CSystemTimer::TimerDone", 4);
     m_CodeBlock.Log("CompileSystemCheck 3");
     CompileSystemCheck((uint32_t)-1, RegSet);
@@ -9406,16 +9406,9 @@ void CX86RecompilerOps::JumpToUnknown(CJumpInfo * JumpInfo)
 void CX86RecompilerOps::SetCurrentPC(uint32_t ProgramCounter)
 {
     m_CompilePC = ProgramCounter;
-    __except_try()
+    if (!g_MMU->MemoryValue32(m_CompilePC, m_Opcode.Value))
     {
-        if (!g_MMU->MemoryValue32(m_CompilePC, m_Opcode.Value))
-        {
-            g_Notify->FatalError(GS(MSG_FAIL_LOAD_WORD));
-        }
-    }
-    __except_catch()
-    {
-        g_Notify->FatalError(GS(MSG_UNKNOWN_MEM_ACTION));
+        g_Notify->FatalError(GS(MSG_FAIL_LOAD_WORD));
     }
 }
 
@@ -9500,7 +9493,7 @@ void CX86RecompilerOps::UpdateCounters(CRegInfo & RegSet, bool CheckTimer, bool 
 
 void CX86RecompilerOps::CompileSystemCheck(uint32_t TargetPC, const CRegInfo & RegSet)
 {
-    m_Assembler.CompConstToVariable((void *)&g_SystemEvents->DoSomething(), "g_SystemEvents->DoSomething()", 0);
+    m_Assembler.CompConstByteToVariable((void *)&m_SystemEvents.DoSomething(), "m_SystemEvents.DoSomething()", 0);
     asmjit::Label Jump = m_Assembler.newLabel();
     m_Assembler.JeLabel("Continue_From_Interrupt_Test", Jump);
     if (TargetPC != (uint32_t)-1)
@@ -9510,7 +9503,7 @@ void CX86RecompilerOps::CompileSystemCheck(uint32_t TargetPC, const CRegInfo & R
 
     CRegInfo RegSetCopy(RegSet);
     RegSetCopy.WriteBackRegisters();
-    m_Assembler.CallThis((uint32_t)g_SystemEvents, AddressOf(&CSystemEvents::ExecuteEvents), "CSystemEvents::ExecuteEvents", 4);
+    m_Assembler.CallThis((uint32_t)&m_SystemEvents, AddressOf(&CSystemEvents::ExecuteEvents), "CSystemEvents::ExecuteEvents", 4);
     ExitCodeBlock();
     m_CodeBlock.Log("");
     m_Assembler.bind(Jump);
@@ -9580,12 +9573,11 @@ void CX86RecompilerOps::OverflowDelaySlot(bool TestTimer)
 
     if (TestTimer)
     {
-        m_Assembler.MoveConstToVariable(&R4300iOp::m_TestTimer, "R4300iOp::m_TestTimer", TestTimer);
+        m_Assembler.MoveConstToVariable(&g_System->m_TestTimer, "R4300iOp::m_TestTimer", TestTimer);
     }
 
     m_Assembler.PushImm32("g_System->CountPerOp()", g_System->CountPerOp());
-    m_Assembler.CallFunc((uint32_t)CInterpreterCPU::ExecuteOps, "CInterpreterCPU::ExecuteOps");
-    m_Assembler.AddConstToX86Reg(asmjit::x86::esp, 4);
+    m_Assembler.CallThis((uint32_t)&g_System->m_OpCodes, AddressOf(&R4300iOp::ExecuteOps), "R4300iOp::ExecuteOps", 8);
 
     if (g_System->bFastSP() && g_Recompiler)
     {
@@ -9665,7 +9657,7 @@ void CX86RecompilerOps::CompileExit(uint32_t JumpPC, uint32_t TargetPC, CRegInfo
         ExitCodeBlock();
         break;
     case ExitReason_DoCPUAction:
-        m_Assembler.CallThis((uint32_t)g_SystemEvents, AddressOf(&CSystemEvents::ExecuteEvents), "CSystemEvents::ExecuteEvents", 4);
+        m_Assembler.CallThis((uint32_t)&g_System->m_SystemEvents, AddressOf(&CSystemEvents::ExecuteEvents), "CSystemEvents::ExecuteEvents", 4);
         ExitCodeBlock();
         break;
     case ExitReason_DoSysCall:
@@ -9704,9 +9696,10 @@ void CX86RecompilerOps::CompileExit(uint32_t JumpPC, uint32_t TargetPC, CRegInfo
         break;
     case ExitReason_TLBReadMiss:
         m_Assembler.MoveConstToVariable(&g_System->m_PipelineStage, "System->m_PipelineStage", InDelaySlot ? PIPELINE_STAGE_JUMP : PIPELINE_STAGE_NORMAL);
+        m_Assembler.PushImm32("EXC_RMISS", EXC_RMISS);
         m_Assembler.MoveVariableToX86reg(asmjit::x86::edx, g_TLBLoadAddress, "g_TLBLoadAddress");
         m_Assembler.push(asmjit::x86::edx);
-        m_Assembler.CallThis((uint32_t)g_Reg, AddressOf(&CRegisters::DoTLBReadMiss), "CRegisters::DoTLBReadMiss", 12);
+        m_Assembler.CallThis((uint32_t)g_Reg, AddressOf(&CRegisters::TriggerAddressException), "CRegisters::TriggerAddressException", 12);
         m_Assembler.MoveVariableToX86reg(asmjit::x86::edx, &g_System->m_JumpToLocation, "System->m_JumpToLocation");
         m_Assembler.MoveX86regToVariable(&g_Reg->m_PROGRAM_COUNTER, "PROGRAM_COUNTER", asmjit::x86::edx);
         m_Assembler.MoveConstToVariable(&g_System->m_PipelineStage, "g_System->m_PipelineStage", PIPELINE_STAGE_NORMAL);
@@ -9915,7 +9908,7 @@ void CX86RecompilerOps::CompileLoadMemoryValue(asmjit::x86::Gp AddressReg, asmji
         m_RegWorkingSet.BeforeCallDirect();
         m_Assembler.PushImm32("m_TempValue32", (uint32_t)&m_TempValue32);
         m_Assembler.push(AddressReg);
-        m_Assembler.CallThis((uint32_t)(&m_MMU), AddressOf(&CMipsMemoryVM::LW_NonMemory), "CMipsMemoryVM::LW_NonMemory", 12);
+        m_Assembler.CallThis((uint32_t)(&m_MMU), AddressOf(&CMipsMemoryVM::LW_VAddr32), "CMipsMemoryVM::LW_VAddr32", 12);
         m_Assembler.test(asmjit::x86::al, asmjit::x86::al);
         m_RegWorkingSet.AfterCallDirect();
         CompileExit((uint32_t)-1, (uint32_t)-1, m_RegWorkingSet, ExitReason_NormalNoSysCheck, false, &CX86Ops::JeLabel);
@@ -9927,7 +9920,7 @@ void CX86RecompilerOps::CompileLoadMemoryValue(asmjit::x86::Gp AddressReg, asmji
         m_RegWorkingSet.BeforeCallDirect();
         m_Assembler.PushImm32("m_TempValue32", (uint32_t)&m_TempValue32);
         m_Assembler.push(AddressReg);
-        m_Assembler.CallThis((uint32_t)(&m_MMU), AddressOf(&CMipsMemoryVM::LH_NonMemory), "CMipsMemoryVM::LH_NonMemory", 12);
+        m_Assembler.CallThis((uint32_t)(&m_MMU), AddressOf(&CMipsMemoryVM::LH_VAddr32), "CMipsMemoryVM::LH_VAddr32", 12);
         m_Assembler.test(asmjit::x86::al, asmjit::x86::al);
         m_RegWorkingSet.AfterCallDirect();
         CompileExit((uint32_t)-1, (uint32_t)-1, m_RegWorkingSet, ExitReason_NormalNoSysCheck, false, &CX86Ops::JeLabel);
@@ -9940,7 +9933,7 @@ void CX86RecompilerOps::CompileLoadMemoryValue(asmjit::x86::Gp AddressReg, asmji
         m_RegWorkingSet.BeforeCallDirect();
         m_Assembler.PushImm32("m_TempValue32", (uint32_t)&m_TempValue32);
         m_Assembler.push(AddressReg);
-        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::LB_NonMemory), "CMipsMemoryVM::LB_NonMemory", 12);
+        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::LB_VAddr32), "CMipsMemoryVM::LB_VAddr32", 12);
         m_Assembler.test(asmjit::x86::al, asmjit::x86::al);
         m_RegWorkingSet.AfterCallDirect();
         CompileExit((uint32_t)-1, (uint32_t)-1, m_RegWorkingSet, ExitReason_NormalNoSysCheck, false, &CX86Ops::JeLabel);
@@ -10095,7 +10088,7 @@ void CX86RecompilerOps::CompileStoreMemoryValue(asmjit::x86::Gp AddressReg, asmj
             m_Assembler.push(ValueReg);
         }
         m_Assembler.push(AddressReg);
-        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::SB_NonMemory), "CMipsMemoryVM::SB_NonMemory", 12);
+        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::SB_VAddr32), "CMipsMemoryVM::SB_VAddr32", 12);
         if (OpsExecuted != 0)
         {
             m_Assembler.AddConstToVariable(g_NextTimer, "g_NextTimer", OpsExecuted);
@@ -10122,7 +10115,7 @@ void CX86RecompilerOps::CompileStoreMemoryValue(asmjit::x86::Gp AddressReg, asmj
             m_Assembler.push(ValueReg);
         }
         m_Assembler.push(AddressReg);
-        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::SH_NonMemory), "CMipsMemoryVM::SH_NonMemory", 12);
+        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::SH_VAddr32), "CMipsMemoryVM::SH_VAddr32", 12);
         if (OpsExecuted != 0)
         {
             m_Assembler.AddConstToVariable(g_NextTimer, "g_NextTimer", OpsExecuted);
@@ -10149,7 +10142,7 @@ void CX86RecompilerOps::CompileStoreMemoryValue(asmjit::x86::Gp AddressReg, asmj
             m_Assembler.push(ValueReg);
         }
         m_Assembler.push(AddressReg);
-        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::SW_NonMemory), "CMipsMemoryVM::SW_NonMemory", 12);
+        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::SW_VAddr32), "CMipsMemoryVM::SW_VAddr32", 12);
         if (OpsExecuted != 0)
         {
             m_Assembler.AddConstToVariable(g_NextTimer, "g_NextTimer", OpsExecuted);
@@ -10178,7 +10171,7 @@ void CX86RecompilerOps::CompileStoreMemoryValue(asmjit::x86::Gp AddressReg, asmj
             m_Assembler.push(ValueRegHi);
         }
         m_Assembler.push(AddressReg);
-        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::SD_NonMemory), "CMipsMemoryVM::SD_NonMemory", 12);
+        m_Assembler.CallThis((uint32_t)&m_MMU, AddressOf(&CMipsMemoryVM::SD_VAddr32), "CMipsMemoryVM::SD_VAddr32", 12);
         if (OpsExecuted != 0)
         {
             m_Assembler.AddConstToVariable(g_NextTimer, "g_NextTimer", OpsExecuted);
@@ -10615,8 +10608,8 @@ void CX86RecompilerOps::SW_Const(uint32_t Value, uint32_t VAddr)
 
                 m_RegWorkingSet.BeforeCallDirect();
                 m_Assembler.push(Value);
-                m_Assembler.push(PAddr | 0xA0000000);
-                m_Assembler.CallThis((uint32_t)g_MMU, AddressOf(&CMipsMemoryVM::SW_NonMemory), "CMipsMemoryVM::SW_NonMemory", 12);
+                m_Assembler.push(PAddr);
+                m_Assembler.CallThis((uint32_t)g_MMU, AddressOf(&CMipsMemoryVM::SW_PhysicalAddress), "CMipsMemoryVM::SW_PhysicalAddress", 12);
                 m_RegWorkingSet.AfterCallDirect();
                 break;
             case 0x0404001C: m_Assembler.MoveConstToVariable(&g_Reg->SP_SEMAPHORE_REG, "SP_SEMAPHORE_REG", 0); break;
@@ -10635,8 +10628,8 @@ void CX86RecompilerOps::SW_Const(uint32_t Value, uint32_t VAddr)
         case 0x0410000C:
             m_RegWorkingSet.BeforeCallDirect();
             m_Assembler.push(Value);
-            m_Assembler.push(PAddr | 0xA0000000);
-            m_Assembler.CallThis((uint32_t)g_MMU, AddressOf(&CMipsMemoryVM::SW_NonMemory), "CMipsMemoryVM::SW_NonMemory", 12);
+            m_Assembler.push(PAddr);
+            m_Assembler.CallThis((uint32_t)g_MMU, AddressOf(&CMipsMemoryVM::SW_PhysicalAddress), "CMipsMemoryVM::SW_PhysicalAddress", 12);
             m_RegWorkingSet.AfterCallDirect();
             break;
         default:
@@ -10972,8 +10965,8 @@ void CX86RecompilerOps::SW_Const(uint32_t Value, uint32_t VAddr)
 
             m_RegWorkingSet.BeforeCallDirect();
             m_Assembler.push(Value);
-            m_Assembler.push(PAddr | 0xA0000000);
-            m_Assembler.CallThis((uint32_t)(g_MMU), AddressOf(&CMipsMemoryVM::SW_NonMemory), "CMipsMemoryVM::SW_NonMemory", 12);
+            m_Assembler.push(PAddr);
+            m_Assembler.CallThis((uint32_t)(g_MMU), AddressOf(&CMipsMemoryVM::SW_PhysicalAddress), "CMipsMemoryVM::SW_PhysicalAddress", 12);
             m_RegWorkingSet.AfterCallDirect();
         }
     }
@@ -11079,8 +11072,8 @@ void CX86RecompilerOps::SW_Register(const asmjit::x86::Gp & Reg, uint32_t VAddr)
         }
         m_RegWorkingSet.BeforeCallDirect();
         m_Assembler.push(Reg);
-        m_Assembler.push(PAddr | 0xA0000000);
-        m_Assembler.CallThis((uint32_t)(g_MMU), AddressOf(&CMipsMemoryVM::SW_NonMemory), "CMipsMemoryVM::SW_NonMemory", 12);
+        m_Assembler.push(PAddr);
+        m_Assembler.CallThis((uint32_t)(g_MMU), AddressOf(&CMipsMemoryVM::SW_PhysicalAddress), "CMipsMemoryVM::SW_PhysicalAddress", 12);
         m_RegWorkingSet.AfterCallDirect();
         break;
     case 0x04300000:

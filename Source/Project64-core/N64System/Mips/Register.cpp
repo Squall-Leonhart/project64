@@ -218,24 +218,13 @@ const char * CRegName::FPR_Ctrl[32] = {
     "FCSR",
 };
 
-uint32_t * CSystemRegisters::_PROGRAM_COUNTER = nullptr;
-MIPS_DWORD * CSystemRegisters::_GPR = nullptr;
-MIPS_DWORD * CSystemRegisters::_FPR = nullptr;
-uint64_t * CSystemRegisters::_CP0 = nullptr;
-MIPS_DWORD * CSystemRegisters::_RegHI = nullptr;
-MIPS_DWORD * CSystemRegisters::_RegLO = nullptr;
-float ** CSystemRegisters::_FPR_S;
-double ** CSystemRegisters::_FPR_D;
-uint32_t * CSystemRegisters::_FPCR = nullptr;
-uint32_t * CSystemRegisters::_LLBit = nullptr;
-
 CP0registers::CP0registers(uint64_t * _CP0) :
     INDEX_REGISTER(_CP0[0]),
     RANDOM_REGISTER(_CP0[1]),
-    ENTRYLO0_REGISTER(_CP0[2]),
-    ENTRYLO1_REGISTER(_CP0[3]),
+    ENTRYLO0_REGISTER((COP0EntryLo &)_CP0[2]),
+    ENTRYLO1_REGISTER((COP0EntryLo &)_CP0[3]),
     CONTEXT_REGISTER((COP0Context &)_CP0[4]),
-    PAGE_MASK_REGISTER(_CP0[5]),
+    PAGE_MASK_REGISTER((COP0PageMask &)_CP0[5]),
     WIRED_REGISTER(_CP0[6]),
     BAD_VADDR_REGISTER(_CP0[8]),
     COUNT_REGISTER(_CP0[9]),
@@ -526,27 +515,14 @@ void CRegisters::Reset(bool bPostPif, CMipsMemoryVM & MMU)
         case CIC_NUS_6106:    PIF_Ram[37] = 0x02; PIF_Ram[38] = 0x85; break;
         }*/
     }
-}
-
-void CRegisters::SetAsCurrentSystem()
-{
-    _PROGRAM_COUNTER = &m_PROGRAM_COUNTER;
-    _GPR = m_GPR;
-    _FPR = m_FPR;
-    _CP0 = m_CP0;
-    _RegHI = &m_HI;
-    _RegLO = &m_LO;
-    _FPR_S = m_FPR_S;
-    _FPR_D = m_FPR_D;
-    _FPCR = m_FPCR;
-    _LLBit = &m_LLBit;
+    m_System.m_TLB.COP0StatusChanged();
 }
 
 uint64_t CRegisters::Cop0_MF(COP0Reg Reg)
 {
     if (LogCP0reads() && Reg <= COP0Reg_31)
     {
-        LogMessage("%08X: R4300i read from %s (0x%08X)", (*_PROGRAM_COUNTER), CRegName::Cop0[Reg], m_CP0[Reg]);
+        LogMessage("%08X: R4300i read from %s (0x%08X)", m_PROGRAM_COUNTER, CRegName::Cop0[Reg], m_CP0[Reg]);
     }
 
     if (Reg == COP0Reg_Count || Reg == COP0Reg_Wired || Reg == COP0Reg_Random)
@@ -565,10 +541,10 @@ void CRegisters::Cop0_MT(COP0Reg Reg, uint64_t Value)
 {
     if (LogCP0changes() && Reg <= COP0Reg_31)
     {
-        LogMessage("%08X: Writing 0x%I64U to %s register (originally: 0x%I64U)", (*_PROGRAM_COUNTER), Value, CRegName::Cop0[Reg], m_CP0[Reg]);
+        LogMessage("%08X: Writing 0x%I64U to %s register (originally: 0x%I64U)", m_PROGRAM_COUNTER, Value, CRegName::Cop0[Reg], m_CP0[Reg]);
         if (Reg == 11) // Compare
         {
-            LogMessage("%08X: Cause register changed from %08X to %08X", (*_PROGRAM_COUNTER), (uint32_t)CAUSE_REGISTER.Value, (uint32_t)(g_Reg->CAUSE_REGISTER.Value & ~CAUSE_IP7));
+            LogMessage("%08X: Cause register changed from %08X to %08X", m_PROGRAM_COUNTER, (uint32_t)CAUSE_REGISTER.Value, (uint32_t)(g_Reg->CAUSE_REGISTER.Value & ~CAUSE_IP7));
         }
     }
     m_CP0Latch = Value;
@@ -630,6 +606,7 @@ void CRegisters::Cop0_MT(COP0Reg Reg, uint64_t Value)
         {
             FixFpuLocations();
         }
+        m_System.m_TLB.COP0StatusChanged();
         CheckInterrupts();
         break;
     }
@@ -676,7 +653,7 @@ void CRegisters::Cop1_CT(uint32_t Reg, uint32_t Value)
 {
     if (Reg == 31)
     {
-        FPStatusReg & StatusReg = (FPStatusReg &)_FPCR[31];
+        FPStatusReg & StatusReg = (FPStatusReg &)m_FPCR[31];
         StatusReg.Value = (Value & 0x183FFFF);
 
         if (((StatusReg.Cause.Inexact & StatusReg.Enable.Inexact) != 0) ||
@@ -753,21 +730,13 @@ void CRegisters::DoAddressError(uint64_t BadVaddr, bool FromRead)
 
 void CRegisters::FixFpuLocations()
 {
-    if (STATUS_REGISTER.FR == 0)
+    for (uint8_t i = 0; i < 32; i++)
     {
-        for (int count = 0; count < 32; count++)
-        {
-            m_FPR_S[count] = &m_FPR[count & ~1].F[count & 1];
-            m_FPR_D[count] = &m_FPR[count & ~1].D;
-        }
-    }
-    else
-    {
-        for (int count = 0; count < 32; count++)
-        {
-            m_FPR_S[count] = &m_FPR[count].F[0];
-            m_FPR_D[count] = &m_FPR[count].D;
-        }
+        m_FPR_UW[i] = &m_FPR[i].UW[0];
+        m_FPR_UDW[i] = &m_FPR[i].UDW;
+        m_FPR_S[i] = STATUS_REGISTER.FR == 0 ? &m_FPR[i & ~1].F[i & 1] : &m_FPR[i].F[0];
+        m_FPR_S_L[i] = STATUS_REGISTER.FR == 0 ? &m_FPR[i & ~1].F[0] : &m_FPR[i].F[0];
+        m_FPR_D[i] = STATUS_REGISTER.FR == 0 ? &m_FPR[i & ~1].D : &m_FPR[i].D;
     }
 }
 
@@ -781,27 +750,28 @@ bool CRegisters::DoIntrException()
     return true;
 }
 
-void CRegisters::DoTLBReadMiss(uint64_t BadVaddr)
+void CRegisters::TriggerAddressException(uint64_t Address, uint32_t ExceptionCode)
 {
-    TriggerAddressException(BadVaddr, EXC_RMISS, !m_TLB.AddressDefined(BadVaddr));
-}
+    bool SpecialOffset = false;
+    if (ExceptionCode == EXC_RMISS || ExceptionCode == EXC_WMISS)
+    {
+        bool Dirty;
+        SpecialOffset = !m_TLB.AddressDefined(Address, Dirty);
+        if (!Dirty)
+        {
+            ExceptionCode = EXC_MOD;
+        }
+    }
 
-void CRegisters::DoTLBWriteMiss(uint64_t BadVaddr)
-{
-    TriggerAddressException(BadVaddr, EXC_WMISS, !m_TLB.AddressDefined(BadVaddr));
-}
-
-void CRegisters::TriggerAddressException(uint64_t Address, uint32_t ExceptionCode, bool SpecialOffset)
-{
     BAD_VADDR_REGISTER = Address;
-    ENTRYHI_REGISTER.VPN2 = Address >> 13;
+    ENTRYHI_REGISTER.VPN2 = ((Address >> 13) & 0x7FFFFFF);
     ENTRYHI_REGISTER.R = Address >> 62;
     CONTEXT_REGISTER.BadVPN2 = Address >> 13;
     XCONTEXT_REGISTER.BadVPN2 = Address >> 13;
     XCONTEXT_REGISTER.R = Address >> 62;
 
     TriggerException(ExceptionCode, 0);
-    if (SpecialOffset && STATUS_REGISTER.ExceptionLevel == 0)
+    if (SpecialOffset)
     {
         m_System.m_JumpToLocation = (m_System.m_JumpToLocation & 0xFFFF0000);
         switch (STATUS_REGISTER.PrivilegeMode)
@@ -835,7 +805,7 @@ void CRegisters::TriggerException(uint32_t ExceptionCode, uint32_t Coprocessor)
 
     CAUSE_REGISTER.ExceptionCode = ExceptionCode;
     CAUSE_REGISTER.CoprocessorUnitNumber = Coprocessor;
-    CAUSE_REGISTER.BranchDelay = m_System.m_PipelineStage == PIPELINE_STAGE_JUMP;
+    CAUSE_REGISTER.BranchDelay = m_System.m_PipelineStage == PIPELINE_STAGE_JUMP || m_System.m_PipelineStage == PIPELINE_STAGE_PERMLOOP_DELAY_DONE;
     EPC_REGISTER = (int64_t)((int32_t)m_PROGRAM_COUNTER - (CAUSE_REGISTER.BranchDelay ? 4 : 0));
     STATUS_REGISTER.ExceptionLevel = 1;
     m_System.m_PipelineStage = PIPELINE_STAGE_JUMP;
