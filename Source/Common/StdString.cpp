@@ -4,6 +4,8 @@
 #include <malloc.h>
 #ifdef _WIN32
 #include <Windows.h>
+#include <sstream>
+#include <vector>
 #endif
 
 stdstr::stdstr()
@@ -29,16 +31,16 @@ strvector stdstr::Tokenize(const char * delimiter) const
 {
     strvector tokens;
 
-    stdstr::size_type lastPos = find_first_not_of(delimiter, 0);
-    stdstr::size_type pos = find_first_of(delimiter, lastPos);
+    std::string::size_type lastPos = find_first_not_of(delimiter, 0);
+    std::string::size_type pos = find_first_of(delimiter, lastPos);
     size_t DelLen = strlen(delimiter);
-    while (stdstr::npos != pos)
+    while (std::string::npos != pos)
     {
         tokens.push_back(substr(lastPos, pos - lastPos));
         lastPos = pos + DelLen;
         pos = find_first_of(delimiter, lastPos);
     }
-    if (stdstr::npos != lastPos)
+    if (std::string::npos != lastPos)
     {
         tokens.push_back(substr(lastPos));
     }
@@ -49,17 +51,30 @@ strvector stdstr::Tokenize(char delimiter) const
 {
     strvector tokens;
 
-    stdstr::size_type lastPos = find_first_not_of(delimiter, 0);
-    stdstr::size_type pos = find_first_of(delimiter, lastPos);
-    while (stdstr::npos != pos)
+    std::string::size_type lastPos = find_first_not_of(delimiter, 0);
+    std::string::size_type pos = find_first_of(delimiter, lastPos);
+    while (std::string::npos != pos)
     {
         tokens.push_back(substr(lastPos, pos - lastPos));
         lastPos = pos + 1;
         pos = find_first_of(delimiter, lastPos);
     }
-    if (stdstr::npos != lastPos)
+    if (std::string::npos != lastPos)
     {
         tokens.push_back(substr(lastPos));
+    }
+    return tokens;
+}
+
+// Implementation of Tokenize function for std::wstring
+std::vector<std::wstring> Tokenize(const std::wstring & str, wchar_t delimiter)
+{
+    std::vector<std::wstring> tokens;
+    std::wstring token;
+    std::wstringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delimiter))
+    {
+        tokens.push_back(token);
     }
     return tokens;
 }

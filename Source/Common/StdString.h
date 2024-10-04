@@ -3,6 +3,7 @@
 class stdstr;
 
 #include <list>
+#include <sstream> // Include for std::wstringstream
 #include <stdarg.h>
 #include <string>
 #include <vector>
@@ -62,3 +63,5 @@ public:
 
 typedef std::list<stdstr> strlist;
 typedef strlist::iterator strlist_iter;
+
+std::vector<std::wstring> Tokenize(const std::wstring & str, wchar_t delimiter);

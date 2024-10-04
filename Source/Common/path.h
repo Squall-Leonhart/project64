@@ -30,13 +30,13 @@ public:
 
     // Attributes
 private:
-    std::string m_strPath;
+    std::wstring m_strPath;
 #ifdef _WIN32
     void * m_hFindFile;
     static void * m_hInst;
 #else
     void * m_OpenedDir;
-    std::string m_FindWildcard;
+    std::wstring m_FindWildcard;
 #endif
     uint32_t m_dwFindFileAttributes;
 
@@ -46,51 +46,51 @@ public:
     // Construction / destruction
     CPath();
     CPath(const CPath & rPath);
-    CPath(const char * lpszPath);
-    CPath(const char * lpszPath, const char * NameExten);
-    CPath(const std::string & strPath);
-    CPath(const std::string & strPath, const char * NameExten);
-    CPath(const std::string & strPath, const std::string & NameExten);
+    CPath(const wchar_t * lpszPath);
+    CPath(const wchar_t * lpszPath, const wchar_t * NameExten);
+    CPath(const std::wstring & strPath);
+    CPath(const std::wstring & strPath, const wchar_t * NameExten);
+    CPath(const std::wstring & strPath, const std::wstring & NameExten);
 
-    CPath(DIR_CURRENT_DIRECTORY sdt, const char * NameExten = nullptr);
+    CPath(DIR_CURRENT_DIRECTORY sdt, const wchar_t * NameExten = nullptr);
 #ifdef _WIN32
-    CPath(DIR_MODULE_DIRECTORY sdt, const char * NameExten = nullptr);
+    CPath(DIR_MODULE_DIRECTORY sdt, const wchar_t * NameExten = nullptr);
     CPath(DIR_MODULE_FILE sdt);
 #endif
     virtual ~CPath();
 
     // Operators
     CPath & operator=(const CPath & rPath);
-    CPath & operator=(const char * lpszPath);
-    CPath & operator=(const std::string & strPath);
+    CPath & operator=(const wchar_t * lpszPath);
+    CPath & operator=(const std::wstring & strPath);
     bool operator==(const CPath & rPath) const;
     bool operator!=(const CPath & rPath) const;
-    operator const char *() const;
-    operator const std::string &()
+    operator const wchar_t *() const;
+    operator const std::wstring &()
     {
         return m_strPath;
     }
 
     // Get path components
 #ifdef _WIN32
-    void GetDriveDirectory(std::string & rDriveDirectory) const;
-    std::string GetDriveDirectory(void) const;
+    void GetDriveDirectory(std::wstring & rDriveDirectory) const;
+    std::wstring GetDriveDirectory(void) const;
 #endif
-    void GetDirectory(std::string & rDirectory) const;
-    std::string GetDirectory(void) const;
-    void GetName(std::string & rName) const;
-    std::string GetName(void) const;
-    void GetNameExtension(std::string & rNameExtension) const;
-    std::string GetNameExtension(void) const;
-    void GetExtension(std::string & rExtension) const;
-    std::string GetExtension(void) const;
-    void GetLastDirectory(std::string & rDirectory) const;
-    std::string GetLastDirectory(void) const;
-    void GetFullyQualified(std::string & rFullyQualified) const;
+    void GetDirectory(std::wstring & rDirectory) const;
+    std::wstring GetDirectory(void) const;
+    void GetName(std::wstring & rName) const;
+    std::wstring GetName(void) const;
+    void GetNameExtension(std::wstring & rNameExtension) const;
+    std::wstring GetNameExtension(void) const;
+    void GetExtension(std::wstring & rExtension) const;
+    std::wstring GetExtension(void) const;
+    void GetLastDirectory(std::wstring & rDirectory) const;
+    std::wstring GetLastDirectory(void) const;
+    void GetFullyQualified(std::wstring & rFullyQualified) const;
 #ifdef _WIN32
-    void GetComponents(std::string * pDrive = nullptr, std::string * pDirectory = nullptr, std::string * pName = nullptr, std::string * pExtension = nullptr) const;
+    void GetComponents(std::wstring * pDrive = nullptr, std::wstring * pDirectory = nullptr, std::wstring * pName = nullptr, std::wstring * pExtension = nullptr) const;
 #else
-    void GetComponents(std::string * pDirectory = nullptr, std::string * pName = nullptr, std::string * pExtension = nullptr) const;
+    void GetComponents(std::wstring * pDirectory = nullptr, std::wstring * pName = nullptr, std::wstring * pExtension = nullptr) const;
 #endif
     // Get other state
     bool IsEmpty() const
@@ -101,21 +101,21 @@ public:
 
     // Set path components
 #ifdef _WIN32
-    void SetDrive(char chDrive);
-    void SetDriveDirectory(const char * lpszDriveDirectory);
+    void SetDrive(wchar_t chDrive);
+    void SetDriveDirectory(const wchar_t * lpszDriveDirectory);
 #endif
-    void SetDirectory(const char * lpszDirectory, bool bEnsureAbsolute = false);
-    void SetName(const char * lpszName);
+    void SetDirectory(const wchar_t * lpszDirectory, bool bEnsureAbsolute = false);
+    void SetName(const wchar_t * lpszName);
     void SetName(int iName);
-    void SetNameExtension(const char * lpszNameExtension);
-    void SetExtension(const char * lpszExtension);
+    void SetNameExtension(const wchar_t * lpszNameExtension);
+    void SetExtension(const wchar_t * lpszExtension);
     void SetExtension(int iExtension);
-    void AppendDirectory(const char * lpszSubDirectory);
-    void UpDirectory(std::string * pLastDirectory = nullptr);
+    void AppendDirectory(const wchar_t * lpszSubDirectory);
+    void UpDirectory(std::wstring * pLastDirectory = nullptr);
 #ifdef _WIN32
-    void SetComponents(const char * lpszDrive, const char * lpszDirectory, const char * lpszName, const char * lpszExtension);
+    void SetComponents(const wchar_t * lpszDrive, const wchar_t * lpszDirectory, const wchar_t * lpszName, const wchar_t * lpszExtension);
 #else
-    void SetComponents(const char * lpszDirectory, const char * lpszName, const char * lpszExtension);
+    void SetComponents(const wchar_t * lpszDirectory, const wchar_t * lpszName, const wchar_t * lpszExtension);
 #endif
     // Set whole path
     void Empty()
@@ -141,7 +141,7 @@ public:
     }
     bool Exists() const;
 #ifdef _WIN32
-    bool SelectFile(void * hwndOwner, const char * InitialDir, const char * FileFilter, bool FileMustExist);
+    bool SelectFile(void * hwndOwner, const wchar_t * InitialDir, const wchar_t * FileFilter, bool FileMustExist);
 #endif
 
     // Directory operations
@@ -151,8 +151,8 @@ public:
 
     // File operations
     bool Delete(bool bEvenIfReadOnly = true) const;
-    bool CopyTo(const char * lpcszTargetFile, bool bOverwrite = true);
-    bool MoveTo(const char * lpcszTargetFile, bool bOverwrite = true);
+    bool CopyTo(const wchar_t * lpcszTargetFile, bool bOverwrite = true);
+    bool MoveTo(const wchar_t * lpcszTargetFile, bool bOverwrite = true);
 
     // Finders
     bool FindFirst(uint32_t dwAttributes = 0);
@@ -171,14 +171,14 @@ private:
 
     bool AttributesMatch(uint32_t dwTargetAttributes, uint32_t dwFileAttributes);
 
-    void cleanPathString(std::string & rDirectory) const;
-    void StripLeadingChar(std::string & rText, char chLeading) const;
-    void StripLeadingBackslash(std::string & Directory) const;
-    void StripTrailingChar(std::string & rText, char chTrailing) const;
-    void StripTrailingBackslash(std::string & rDirectory) const;
-    void EnsureTrailingBackslash(std::string & Directory) const;
-    void EnsureLeadingBackslash(std::string & Directory) const;
+    void cleanPathString(std::wstring & rDirectory) const;
+    void StripLeadingChar(std::wstring & rText, wchar_t chLeading) const;
+    void StripLeadingBackslash(std::wstring & Directory) const;
+    void StripTrailingChar(std::wstring & rText, wchar_t chTrailing) const;
+    void StripTrailingBackslash(std::wstring & rDirectory) const;
+    void EnsureTrailingBackslash(std::wstring & Directory) const;
+    void EnsureLeadingBackslash(std::wstring & Directory) const;
 #ifndef _WIN32
-    bool wildcmp(const char * wild, const char * string);
+    bool wildcmp(const wchar_t * wild, const wchar_t * string);
 #endif
 };
